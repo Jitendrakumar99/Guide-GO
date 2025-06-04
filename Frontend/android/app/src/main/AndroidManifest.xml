@@ -17,7 +17,7 @@
         <!-- Google Maps API Key -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyDdIriSwDafxF_IudsJtC5_cGgk67xhfYo"
+            android:value=""
         />
 
         <!-- Google Play Services Version -->
