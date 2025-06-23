@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,101 +8,120 @@ import {
   TouchableOpacity,
   Image,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import StatusBar from '../../components/StatusBar';
+import { getAllRooms } from '../../utils/api';
 
 const { width } = Dimensions.get('window');
+const defaultImage = require('../../../assets/photo/pac1.jpg');
+const backend_url="http://192.168.141.31:3000";
+const RoomCard = ({ room, onPress }) => {
+  // Format location coordinates to a readable string
+  const locationString = room.location?.coordinates ? 
+    `${room.location.coordinates[1]}, ${room.location.coordinates[0]}` : 
+    'Location not specified';
 
-const RoomCard = ({ image, title, type, location, rating, price, amenities, capacity, onPress }) => (
-  <TouchableOpacity style={styles.roomCard} onPress={onPress}>
-    <Image source={image} style={styles.roomImage} resizeMode="cover" />
-    <View style={styles.roomContent}>
-      <View style={styles.roomHeader}>
-        <Text style={styles.roomTitle}>{title}</Text>
-        <View style={styles.ratingContainer}>
-          <Ionicons name="star" size={16} color="#FFD700" />
-          <Text style={styles.ratingText}>{rating}</Text>
+  return (
+    <TouchableOpacity style={styles.roomCard} onPress={onPress}>
+      <Image 
+        source={room.images?.[0] ? { uri: `${backend_url}/${room.images[0]}` } : defaultImage} 
+        style={styles.roomImage} 
+        resizeMode="cover" 
+      />
+      <View style={styles.roomContent}>
+        <View style={styles.roomHeader}>
+          <Text style={styles.roomTitle}>{room.title || 'Untitled Room'}</Text>
+          <View style={styles.ratingContainer}>
+            <Ionicons name="star" size={16} color="#FFD700" />
+            <Text style={styles.ratingText}>{room.rating || '0.0'}</Text>
+          </View>
         </View>
-      </View>
-      <View style={styles.typeContainer}>
-        <Ionicons name="bed" size={16} color="#007AFF" />
-        <Text style={styles.typeText}>{type}</Text>
-      </View>
-      <View style={styles.locationContainer}>
-        <Ionicons name="location" size={16} color="#007AFF" />
-        <Text style={styles.locationText}>{location}</Text>
-      </View>
-      <View style={styles.detailsContainer}>
-        <View style={styles.detailItem}>
-          <Ionicons name="people" size={16} color="#007AFF" />
-          <Text style={styles.detailText}>Up to {capacity} guests</Text>
+        <View style={styles.typeContainer}>
+          <Ionicons name="bed" size={16} color="#007AFF" />
+          <Text style={styles.typeText}>{room.type || 'Standard'}</Text>
         </View>
-        <View style={styles.detailItem}>
-          <Ionicons name="wifi" size={16} color="#007AFF" />
-          <Text style={styles.detailText}>Free WiFi</Text>
+        <View style={styles.locationContainer}>
+          <Ionicons name="location" size={16} color="#007AFF" />
+          <Text style={styles.locationText}>{room.address || locationString}</Text>
         </View>
+        <View style={styles.ownerContainer}>
+          <Ionicons name="person" size={16} color="#007AFF" />
+          <Text style={styles.ownerText}>{room.owner?.name || 'Unknown Owner'}</Text>
+        </View>
+        <Text style={styles.priceText}>₹{room.price }/night</Text>
       </View>
-      <Text style={styles.priceText}>${price}/night</Text>
-    </View>
-  </TouchableOpacity>
-);
+    </TouchableOpacity>
+  );
+};
 
 const RoomScreen = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [rooms, setRooms] = useState([]);
 
-  const filters = ['All', 'Deluxe', 'Suite', 'Family'];
+  const filters = ['All', 'Standard', 'Deluxe', 'Suite'];
 
-  const rooms = [
-    {
-      id: '1',
-      image: require('../../../assets/photo/07.jpeg'),
-      title: 'Deluxe Ocean View',
-      type: 'Deluxe',
-      location: 'Mumbai, India',
-      rating: '4.8',
-      price: '150',
-      capacity: 2,
-      amenities: ['Ocean View', 'King Bed', 'Balcony', 'Mini Bar'],
-      description: 'Spacious room with stunning ocean views and modern amenities'
-    },
-    {
-      id: '2',
-      image: require('../../../assets/photo/08.png'),
-      title: 'Executive Suite',
-      type: 'Suite',
-      location: 'Delhi, India',
-      rating: '4.9',
-      price: '250',
-      capacity: 2,
-      amenities: ['City View', 'King Bed', 'Living Room', 'Work Desk'],
-      description: 'Luxurious suite with separate living area and premium services'
-    },
-    {
-      id: '3',
-      image: require('../../../assets/photo/10.jpg'),
-      title: 'Family Suite',
-      type: 'Family',
-      location: 'Bangalore, India',
-      rating: '4.7',
-      price: '300',
-      capacity: 4,
-      amenities: ['Two Bedrooms', 'Kitchen', 'Living Room', 'Kids Play Area'],
-      description: 'Perfect for families with spacious rooms and child-friendly amenities'
+  useEffect(() => {
+    fetchRooms();
+  }, []);
+
+  const fetchRooms = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const roomsData = await getAllRooms();
+      setRooms(roomsData);
+    } catch (err) {
+      setError(err.message);
+      console.error('Error fetching rooms:', err);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
   const filteredRooms = rooms.filter(room => {
-    const matchesSearch = room.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         room.location.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesFilter = selectedFilter === 'all' || room.type.toLowerCase() === selectedFilter.toLowerCase();
+    const matchesSearch = room.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         room.location?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesFilter = selectedFilter === 'all' || room.type?.toLowerCase() === selectedFilter.toLowerCase();
     return matchesSearch && matchesFilter;
   });
 
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#007AFF" />
+          <Text style={styles.loadingText}>Loading rooms...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+        <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle" size={48} color="#FF3B30" />
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity 
+            style={styles.retryButton}
+            onPress={fetchRooms}
+          >
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       
       {/* Header Section */}
@@ -163,16 +182,28 @@ const RoomScreen = ({ navigation }) => {
       {/* Rooms List */}
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.roomsContainer}>
-          {filteredRooms.map(room => (
-            <RoomCard
-              key={room.id}
-              {...room}
-              onPress={() => navigation.navigate('RoomDetails', { room })}
-            />
-          ))}
+          {filteredRooms.length > 0 ? (
+            filteredRooms.map(room => (
+              <RoomCard
+                key={room._id || room.id}
+                room={room}
+                onPress={() => navigation.navigate('RoomDetails', { room })}
+              />
+            ))
+          ) : (
+            <View style={styles.noRoomsContainer}>
+              <Ionicons name="bed-outline" size={48} color="#ccc" />
+              <Text style={styles.noRoomsText}>No rooms found</Text>
+              <Text style={styles.noRoomsSubtext}>
+                {searchQuery || selectedFilter !== 'all' 
+                  ? 'Try adjusting your search or filters'
+                  : 'No rooms available at the moment'}
+              </Text>
+            </View>
+          )}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -180,10 +211,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+    paddingTop: 0,
   },
   headerContainer: {
     paddingHorizontal: 20,
-    paddingTop: 10,
+    paddingTop: 0,
     paddingBottom: 15,
     backgroundColor: '#fff',
   },
@@ -318,19 +350,6 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     color: '#666',
   },
-  detailsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  detailItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  detailText: {
-    marginLeft: 8,
-    color: '#666',
-  },
   ratingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -348,6 +367,68 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#007AFF',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#666',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#FF3B30',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  noRoomsContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
+  },
+  noRoomsText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#666',
+    marginTop: 10,
+  },
+  noRoomsSubtext: {
+    fontSize: 14,
+    color: '#999',
+    textAlign: 'center',
+    marginTop: 5,
+  },
+  ownerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  ownerText: {
+    marginLeft: 4,
+    fontSize: 14,
+    color: '#666',
   },
 });
 

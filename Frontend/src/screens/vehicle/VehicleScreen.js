@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,33 +8,43 @@ import {
   TouchableOpacity,
   Image,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import StatusBar from '../../components/StatusBar';
+import { getAllVehicles } from '../../utils/api';
 
 const { width } = Dimensions.get('window');
-
-const VehicleCard = ({ image, title, type, location, rating, price, features, onPress }) => (
+const defaultImage = require('../../../assets/photo/toyota-innova.jpg');
+const backend_url="http://192.168.141.31:3000"||process.env.backend_url;
+const VehicleCard = ({ vehicle, onPress }) => (
   <TouchableOpacity style={styles.vehicleCard} onPress={onPress}>
-    <Image source={image} style={styles.vehicleImage} resizeMode="cover" />
+    <Image 
+        source={vehicle.images?.[0] ? { uri: `${backend_url}/${vehicle.images[0]}` } : defaultImage} 
+      style={styles.vehicleImage} 
+      resizeMode="cover" 
+    />
     <View style={styles.vehicleContent}>
       <View style={styles.vehicleHeader}>
-        <Text style={styles.vehicleTitle}>{title}</Text>
+        <Text style={styles.vehicleTitle}>{vehicle.title || 'Untitled Vehicle'}</Text>
         <View style={styles.ratingContainer}>
           <Ionicons name="star" size={16} color="#FFD700" />
-          <Text style={styles.ratingText}>{rating}</Text>
+          <Text style={styles.ratingText}>{vehicle.rating || '0.0'}</Text>
         </View>
       </View>
       <View style={styles.typeContainer}>
         <Ionicons name="car" size={16} color="#007AFF" />
-        <Text style={styles.typeText}>{type}</Text>
+        <Text style={styles.typeText}>{vehicle.type || 'Standard'}</Text>
       </View>
       <View style={styles.locationContainer}>
         <Ionicons name="location" size={16} color="#007AFF" />
-        <Text style={styles.locationText}>{location}</Text>
+        <Text style={styles.locationText}>{vehicle.address || vehicle.location}</Text>
       </View>
-      <Text style={styles.priceText}>${price}/day</Text>
+      <View style={styles.ownerContainer}>
+        <Ionicons name="person" size={16} color="#007AFF" />
+        <Text style={styles.ownerText}>{vehicle.owner?.name || 'Unknown Owner'}</Text>
+      </View>
+      <Text style={styles.priceText}>₹{vehicle.price || '0'}/day</Text>
     </View>
   </TouchableOpacity>
 );
@@ -42,54 +52,69 @@ const VehicleCard = ({ image, title, type, location, rating, price, features, on
 const VehicleScreen = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [vehicles, setVehicles] = useState([]);
 
   const filters = ['All', 'SUV', 'Sedan', 'Luxury'];
 
-  const vehicles = [
-    {
-      id: '1',
-      image: require('../../../assets/photo/toyota-innova.jpg'),
-      title: 'Toyota Innova',
-      type: 'SUV',
-      location: 'Mumbai, India',
-      rating: '4.8',
-      price: '50',
-      features: ['7 Seater', 'Automatic', 'Diesel', 'AC'],
-      description: 'Comfortable SUV perfect for family trips'
-    },
-    {
-      id: '2',
-      image: require('../../../assets/photo/New-2020-Honda-City.jpg'),
-      title: 'Honda City',
-      type: 'Sedan',
-      location: 'Delhi, India',
-      rating: '4.7',
-      price: '40',
-      features: ['5 Seater', 'Manual', 'Petrol', 'AC'],
-      description: 'Economic and reliable sedan for city drives'
-    },
-    {
-      id: '3',
-      image: require('../../../assets/photo/2015_mercedes-benz_c-class_34_1920x1080.jpg'),
-      title: 'Mercedes C-Class',
-      type: 'Luxury',
-      location: 'Bangalore, India',
-      rating: '4.9',
-      price: '100',
-      features: ['5 Seater', 'Automatic', 'Petrol', 'Premium Audio'],
-      description: 'Luxury sedan with premium features'
+  useEffect(() => {
+    fetchVehicles();
+  }, []);
+
+  const fetchVehicles = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const vehiclesData = await getAllVehicles();
+      setVehicles(vehiclesData);
+    } catch (err) {
+      setError(err.message);
+      console.error('Error fetching vehicles:', err);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
   const filteredVehicles = vehicles.filter(vehicle => {
-    const matchesSearch = vehicle.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         vehicle.location.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesFilter = selectedFilter === 'all' || vehicle.type.toLowerCase() === selectedFilter.toLowerCase();
+    const matchesSearch = vehicle.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         vehicle.location?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesFilter = selectedFilter === 'all' || vehicle.type?.toLowerCase() === selectedFilter.toLowerCase();
     return matchesSearch && matchesFilter;
   });
 
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#007AFF" />
+          <Text style={styles.loadingText}>Loading vehicles...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+        <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle" size={48} color="#FF3B30" />
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity 
+            style={styles.retryButton}
+            onPress={fetchVehicles}
+          >
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       
       {/* Header Section */}
@@ -150,16 +175,28 @@ const VehicleScreen = ({ navigation }) => {
       {/* Vehicles List */}
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.vehiclesContainer}>
-          {filteredVehicles.map(vehicle => (
-            <VehicleCard
-              key={vehicle.id}
-              {...vehicle}
-              onPress={() => navigation.navigate('VehicleDetails', { vehicle })}
-            />
-          ))}
+          {filteredVehicles.length > 0 ? (
+            filteredVehicles.map(vehicle => (
+              <VehicleCard
+                key={vehicle._id || vehicle.id}
+                vehicle={vehicle}
+                onPress={() => navigation.navigate('VehicleDetails', { vehicle })}
+              />
+            ))
+          ) : (
+            <View style={styles.noVehiclesContainer}>
+              <Ionicons name="car-outline" size={48} color="#ccc" />
+              <Text style={styles.noVehiclesText}>No vehicles found</Text>
+              <Text style={styles.noVehiclesSubtext}>
+                {searchQuery || selectedFilter !== 'all' 
+                  ? 'Try adjusting your search or filters'
+                  : 'No vehicles available at the moment'}
+              </Text>
+            </View>
+          )}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -167,10 +204,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+    paddingTop: 0,
   },
   headerContainer: {
     paddingHorizontal: 20,
-    paddingTop: 10,
+    paddingTop: 0,
     paddingBottom: 15,
     backgroundColor: '#fff',
   },
@@ -322,6 +360,68 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#007AFF',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#666',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#FF3B30',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  noVehiclesContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
+  },
+  noVehiclesText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#666',
+    marginTop: 10,
+  },
+  noVehiclesSubtext: {
+    fontSize: 14,
+    color: '#999',
+    textAlign: 'center',
+    marginTop: 5,
+  },
+  ownerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  ownerText: {
+    marginLeft: 4,
+    fontSize: 14,
+    color: '#666',
   },
 });
 

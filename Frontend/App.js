@@ -2,7 +2,7 @@ import 'react-native-gesture-handler';
 import React, { useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createDrawerNavigator } from '@react-navigation/drawer';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { View, Text, StatusBar } from 'react-native';
 import OnboardingScreen from './src/screens/onboarding/OnboardingScreen';
@@ -10,36 +10,60 @@ import AuthScreen from './src/screens/auth/AuthScreen';
 import Login from './src/screens/auth/login';
 import SignUp from "./src/screens/auth/signup";
 import BottomTabNavigator from './src/navigation/BottomTabNavigator';
+import CustomDrawerContent from './src/components/CustomDrawerContent';
+import MyListingsScreen from './src/screens/profile/MyListingsScreen';
+import MyBookingsScreen from './src/screens/profile/MyBookingsScreen';
+import UserBookedScreen from './src/screens/profile/UserBookedScreen';
+import EarningsScreen from './src/screens/profile/EarningsScreen';
+import AddListingScreen from './src/screens/listing/AddListingScreen';
+import EditListingScreen from './src/screens/listing/EditListingScreen';
+import RoomDetails from './src/screens/room/RoomDetails';
+import VehicleDetails from './src/screens/vehicle/VehicleDetails';
+import BookingDetailsScreen from './src/screens/booking/BookingDetailsScreen';
+import ProfileScreen from './src/screens/profile/ProfileScreen';
+import HelpSupportScreen from './src/screens/profile/HelpSupportScreen';
+import SettingsScreen from './src/screens/profile/SettingsScreen';
+import PaymentMethodsScreen from './src/screens/profile/PaymentMethodsScreen';
+import NotificationScreen from './src/screens/profile/NotificationsScreen';
+
 // import Main from "./component/main";
 // import Home from "./component/Home";
 
 const Stack = createNativeStackNavigator();
-const Tab = createBottomTabNavigator();
+const Drawer = createDrawerNavigator();
 
-function MainTabs() {
+function MainDrawer() {
   return (
-    <Tab.Navigator
+    <Drawer.Navigator
+      drawerContent={props => <CustomDrawerContent {...props} />}
       screenOptions={{
         headerShown: false,
+        safeAreaInsets: { top: 0 },
+        drawerType: 'slide',
+        drawerStyle: {
+          width: 260,
+        },
+        sceneContainerStyle: {
+          borderRadius: 20,
+        },
       }}
     >
-      <Tab.Screen 
-        name="Stays" 
-        component={PlaceholderScreen} 
-      />
-      <Tab.Screen 
-        name="Vehicles" 
-        component={PlaceholderScreen}
-      />
-      <Tab.Screen 
-        name="Explore" 
-        component={PlaceholderScreen}
-      />
-      <Tab.Screen 
-        name="Profile" 
-        component={PlaceholderScreen}
-      />
-    </Tab.Navigator>
+      <Drawer.Screen name="MainTabs" component={BottomTabNavigator} />
+      <Drawer.Screen name="Profile" component={ProfileScreen} />
+      <Drawer.Screen name="MyListings" component={MyListingsScreen} />
+      <Drawer.Screen name="MyBookings" component={MyBookingsScreen} />
+      <Drawer.Screen name="UserBooked" component={UserBookedScreen} />
+      <Drawer.Screen name="Earnings" component={EarningsScreen} />
+      <Drawer.Screen name="AddListing" component={AddListingScreen} />
+      <Drawer.Screen name="EditListing" component={EditListingScreen} />
+      <Drawer.Screen name="RoomDetails" component={RoomDetails} />
+      <Drawer.Screen name="VehicleDetails" component={VehicleDetails} />
+      <Drawer.Screen name="BookingDetails" component={BookingDetailsScreen} />
+      <Drawer.Screen name="HelpSupport" component={HelpSupportScreen} />
+      <Drawer.Screen name="Settings" component={SettingsScreen} />
+      <Drawer.Screen name="PaymentMethods" component={PaymentMethodsScreen} />
+      <Drawer.Screen name="Notifications" component={NotificationScreen} />
+    </Drawer.Navigator>
   );
 }
 
@@ -62,19 +86,14 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      
       <NavigationContainer>
-        <StatusBar
-          barStyle="dark-content"
-          backgroundColor="transparent"
-          translucent={true}
-        />
         <Stack.Navigator
           screenOptions={{
             headerShown: false,
             contentStyle: {
               backgroundColor: '#FFFFFF'
-            }
+            },
+            safeAreaInsets: { top: 0 ,bottom:0},
           }}
         >
           {!hasSeenOnboarding ? (
@@ -99,8 +118,8 @@ export default function App() {
             </>
           ) : (
             <Stack.Screen 
-              name="MainTabs" 
-              component={BottomTabNavigator}
+              name="MainDrawer" 
+              component={MainDrawer}
             />
           )}
         </Stack.Navigator>

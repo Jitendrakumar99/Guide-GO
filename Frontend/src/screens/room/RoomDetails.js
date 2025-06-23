@@ -1,4 +1,4 @@
-import React, { useState, useEffect, } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,94 +9,138 @@ import {
   Dimensions,
   Linking,
   Platform,
-  PermissionsAndroid,
+  Alert,
+  ActivityIndicator,
+  FlatList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MapView, { PROVIDER_GOOGLE, Marker } from 'react-native-maps';
 import { WebView } from 'react-native-webview';
-import GOOGLE_MAPS_API_KEY from '../../config/maps';
 import RoomRating from './ReviewRating';
-import * as Location from 'expo-location';
-const { width } = Dimensions.get('window');
+import { checkListingOwnership, createBooking, getCurrentUser } from '../../utils/api';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
+const { width } = Dimensions.get('window');
 const defaultImage = require('../../../assets/photo/pac1.jpg');
+const backend_url = "http://192.168.141.31:3000"||process.env.backend_url;
 
 const RoomDetails = ({ route, navigation }) => {
   const { room } = route.params;
-  const [hasLocationPermission, setHasLocationPermission] = useState(false);
-    
-  const [location, setLocation] = useState(null);
-  const [errorMsg, setErrorMsg] = useState(null);
-
-  useEffect(() => {
-    const getLocation = async () => {
-      if (Platform.OS === 'android') {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
-        );
-        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-          console.log("Location permission denied");
-          return;
-        }
-      }
-
-      // Get the current location using expo-location
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        setErrorMsg('Permission to access location was denied');
-        return;
-      }
-
-      let currentLocation = await Location.getCurrentPositionAsync({});
-      setLocation({
-        latitude: currentLocation.coords.latitude,
-        longitude: currentLocation.coords.longitude,
-        latitudeDelta: 0.0922,
-        longitudeDelta: 0.0421,
-      });
-    };
-
-    getLocation();
-  }, []);
-
-  useEffect(() => {
-    requestLocationPermission();
-  }, []);
-
-  const requestLocationPermission = async () => {
-    // try {
-    //   const granted = await PermissionsAndroid.request(
-    //     PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-    //     {
-    //       title: "Location Permission",
-    //       message: "This app needs access to your location to show the room on the map.",
-    //       buttonNeutral: "Ask Me Later",
-    //       buttonNegative: "Cancel",
-    //       buttonPositive: "OK"
-    //     }
-    //   );
-    //   setHasLocationPermission(granted === PermissionsAndroid.RESULTS.GRANTED);
-    // } catch (err) {
-    //   console.warn(err);
-    // }
-  };
-
   // Ensure room object has all required properties with defaults
   const safeRoom = {
-    image: defaultImage,
-    title: 'Room Details',
-    rating: '4.0',
-    location: 'Location not specified',
-    description: 'No description available',
-    amenities: [],
-    gallery: [],
-    price: '0',
-    coordinates: {
-      latitude: 19.0760,  // Default coordinates (Mumbai)
+    _id: room.id || room._id || '',
+    title: room.title || 'Room Details',
+    description: room.description || 'No description available',
+    pricePerNight: room.pricePerNight || room.price || 0,
+    rating: room.rating || '0.0',
+    location: room.address || 'Location not specified',
+    amenities: Array.isArray(room.amenities) ? room.amenities : [],
+    gallery: Array.isArray(room.gallery) ? room.gallery : [],
+    images: Array.isArray(room.images) ? room.images : [],
+    capacity: room.capacity || 2,
+    type: room.type || 'Standard',
+    coordinates: room.coordinates || {
+      latitude: 19.0760,
       longitude: 72.8777,
     },
+    owner: room.owner ? {
+      _id: room.owner.id || room.owner._id,
+      name: room.owner.name || '',
+      profilePic: room.owner.profilePic || null
+    } : null,
     ...room
+  };
+
+  const [isOwner, setIsOwner] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [bookingLoading, setBookingLoading] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [datePickerMode, setDatePickerMode] = useState('start');
+  const [startDate, setStartDate] = useState(new Date());
+  const [endDate, setEndDate] = useState(new Date(new Date().setDate(new Date().getDate() + 1)));
+
+  useEffect(() => {
+    checkOwnership();
+  }, []);
+  console.log("backend_url",backend_url);
+  const checkOwnership = async () => {
+    try {
+      const owner = await checkListingOwnership(safeRoom._id, 'room');
+      setIsOwner(owner);
+    } catch (error) {
+      console.error('Error checking ownership:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDateChange = (event, selectedDate) => {
+    setShowDatePicker(false);
+    if (selectedDate) {
+      if (datePickerMode === 'start') {
+        setStartDate(selectedDate);
+        // Set end date to next day if it's before start date
+        if (endDate <= selectedDate) {
+          setEndDate(new Date(selectedDate.setDate(selectedDate.getDate() + 1)));
+        }
+      } else {
+        setEndDate(selectedDate);
+      }
+    }
+  };
+
+  const handleBookNow = async () => {
+    if (isOwner) {
+      Alert.alert('Cannot Book', 'You cannot book your own listing.');
+      return;
+    }
+
+    try {
+      // Get current user data for validation
+      const userData = await getCurrentUser();
+      if (!userData) {
+        throw new Error('Please login to book a room');
+      }
+
+      // Format the room data for booking
+      const bookingData = {
+        _id: safeRoom._id,
+        title: safeRoom.title,
+        description: safeRoom.description,
+        pricePerNight: safeRoom.pricePerNight || safeRoom.price,
+        images: safeRoom.images,
+        amenities: safeRoom.amenities,
+        location: safeRoom.location,
+        coordinates: safeRoom.coordinates,
+        owner: {
+          _id: safeRoom.owner?.id || safeRoom.owner?._id,
+          name: safeRoom.owner?.name || '',
+          profilePic: safeRoom.owner?.profilePic || null
+        }
+      };
+
+      // Navigate to booking form with formatted room data
+      navigation.navigate('BookingForm', {
+        listing: bookingData,
+        listingType: 'room'
+      });
+    } catch (error) {
+      console.error('Booking error:', error);
+      Alert.alert('Error', error.message || 'Failed to proceed with booking');
+    }
+  };
+
+  const calculateTotalPrice = () => {
+    const nights = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+    return nights * (safeRoom.pricePerNight || 0);
+  };
+
+  const formatDate = (date) => {
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
   };
 
   const handleGetDirections = (coordinates) => {
@@ -108,116 +152,21 @@ const RoomDetails = ({ route, navigation }) => {
     });
   };
 
-  // Custom map style
-  const mapStyle = [
-    {
-      "featureType": "water",
-      "elementType": "geometry",
-      "stylers": [
-        {
-          "color": "#e9e9e9"
-        },
-        {
-          "lightness": 17
-        }
-      ]
-    },
-    {
-      "featureType": "landscape",
-      "elementType": "geometry",
-      "stylers": [
-        {
-          "color": "#f5f5f5"
-        },
-        {
-          "lightness": 20
-        }
-      ]
-    },
-    {
-      "featureType": "road.highway",
-      "elementType": "geometry.fill",
-      "stylers": [
-        {
-          "color": "#ffffff"
-        },
-        {
-          "lightness": 17
-        }
-      ]
-    },
-    {
-      "featureType": "road.highway",
-      "elementType": "geometry.stroke",
-      "stylers": [
-        {
-          "color": "#ffffff"
-        },
-        {
-          "lightness": 29
-        },
-        {
-          "weight": 0.2
-        }
-      ]
-    },
-    {
-      "featureType": "road.arterial",
-      "elementType": "geometry",
-      "stylers": [
-        {
-          "color": "#ffffff"
-        },
-        {
-          "lightness": 18
-        }
-      ]
-    },
-    {
-      "featureType": "road.local",
-      "elementType": "geometry",
-      "stylers": [
-        {
-          "color": "#ffffff"
-        },
-        {
-          "lightness": 16
-        }
-      ]
-    },
-    {
-      "featureType": "poi",
-      "elementType": "geometry",
-      "stylers": [
-        {
-          "color": "#f5f5f5"
-        },
-        {
-          "lightness": 21
-        }
-      ]
-    },
-    {
-      "featureType": "poi.park",
-      "elementType": "geometry",
-      "stylers": [
-        {
-          "color": "#dedede"
-        },
-        {
-          "lightness": 21
-        }
-      ]
-    }
-  ];
+  const renderGalleryItem = ({ item, index }) => (
+    <Image 
+      key={index}
+      source={typeof item === 'string' ? { uri: item } : item}
+      style={styles.galleryImage}
+      resizeMode="cover"
+    />
+  );
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+  const renderContent = () => (
+    <>
         {/* Header Image */}
         <View style={styles.imageContainer}>
           <Image 
-            source={safeRoom.image || defaultImage}
+            source={safeRoom.images.length > 0 ? { uri: `${backend_url}/${safeRoom.images[0]}` } : defaultImage}
             style={styles.mainImage}
             resizeMode="cover"
           />
@@ -250,23 +199,23 @@ const RoomDetails = ({ route, navigation }) => {
           <View style={styles.infoContainer}>
             <View style={styles.infoItem}>
               <Ionicons name="bed" size={24} color="#666" />
-              <Text style={styles.infoText}>2 Beds</Text>
+            <Text style={styles.infoText}>{safeRoom.capacity} Beds</Text>
             </View>
             <View style={styles.infoItem}>
               <Ionicons name="people" size={24} color="#666" />
-              <Text style={styles.infoText}>Max 3 Guests</Text>
+            <Text style={styles.infoText}>Max {safeRoom.maxGuests || '3'} Guests</Text>
             </View>
             <View style={styles.infoItem}>
               <Ionicons name="resize" size={24} color="#666" />
-              <Text style={styles.infoText}>300 sq ft</Text>
+            <Text style={styles.infoText}>{safeRoom.size || '300'} sq ft</Text>
             </View>
           </View>
 
           {/* Amenities */}
-          {safeRoom.amenities.length > 0 && (
+        {Array.isArray(safeRoom.amenities) && safeRoom.amenities.length > 0 && (
             <>
-          <Text style={styles.sectionTitle}>Amenities</Text>
-          <View style={styles.amenitiesContainer}>
+              <Text style={styles.sectionTitle}>Amenities</Text>
+              <View style={styles.amenitiesContainer}>
                 {safeRoom.amenities.map((amenity, index) => (
                   <View key={index} style={styles.amenityItem}>
                     <Ionicons 
@@ -287,23 +236,17 @@ const RoomDetails = ({ route, navigation }) => {
           )}
 
           {/* Gallery */}
-          {safeRoom.gallery.length > 0 && (
+        {Array.isArray(safeRoom.gallery) && safeRoom.gallery.length > 0 && (
             <>
               <Text style={styles.sectionTitle}>Gallery</Text>
-              <ScrollView 
+            <FlatList
+              data={safeRoom.gallery}
+              renderItem={renderGalleryItem}
+              keyExtractor={(_, index) => index.toString()}
                 horizontal 
                 showsHorizontalScrollIndicator={false}
                 style={styles.gallery}
-              >
-                {safeRoom.gallery.map((image, index) => (
-                  <Image 
-                key={index}
-                    source={image}
-                    style={styles.galleryImage}
-                    resizeMode="cover"
-              />
-            ))}
-              </ScrollView>
+            />
             </>
           )}
 
@@ -322,41 +265,6 @@ const RoomDetails = ({ route, navigation }) => {
 
           {/* Location Map */}
           <Text style={styles.sectionTitle}>Location</Text>
-          <MapView
-            initialRegion={{
-              latitude: 37.78825,
-              longitude: -122.4324,
-              latitudeDelta: 0.0922,
-              longitudeDelta: 0.0421,
-            }}
-          />
-          <View style={styles.container}>
-            {location ? (
-              <MapView
-                provider={PROVIDER_GOOGLE}
-                style={styles.map}
-                region={{
-                  latitude: location.latitude,
-                  longitude: location.longitude,
-                  latitudeDelta: 0.0922,
-                  longitudeDelta: 0.0421,
-                }}
-              >
-                {/* <Marker
-                  coordinate={{ latitude: location.latitude, longitude: location.longitude }}
-                  title={"Your Location"}
-                  description={"This is your current location"}
-                /> */}
-              </MapView>
-            ) : (
-              <View style={styles.loadingContainer}>
-                <Text>{errorMsg ? errorMsg : "Loading..."}</Text>
-              </View>
-            )}
-          </View>
-
-          {/* Google Maps Embed */}
-          {/* <Text style={styles.sectionTitle}>Detailed Location</Text> */}
           <View style={styles.webviewContainer}>
             <WebView
               source={{
@@ -405,18 +313,87 @@ const RoomDetails = ({ route, navigation }) => {
             />
           </View>
         </View>
+    </>
+  );
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#007AFF" />
+          <Text style={styles.loadingText}>Loading room details...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {renderContent()}
       </ScrollView>
 
       {/* Bottom Bar */}
       <View style={styles.bottomBar}>
+        {isOwner ? (
+          <View style={styles.ownerMessage}>
+            <Ionicons name="information-circle" size={24} color="#007AFF" />
+            <Text style={styles.ownerMessageText}>This is your listing</Text>
+          </View>
+        ) : (
+          <>
+            <View style={styles.bookingContainer}>
+              <View style={styles.dateContainer}>
+                <TouchableOpacity 
+                  style={styles.dateButton}
+                  onPress={() => {
+                    setDatePickerMode('start');
+                    setShowDatePicker(true);
+                  }}
+                >
+                  <Text style={styles.dateLabel}>Check-in</Text>
+                  <Text style={styles.dateValue}>{formatDate(startDate)}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.dateButton}
+                  onPress={() => {
+                    setDatePickerMode('end');
+                    setShowDatePicker(true);
+                  }}
+                >
+                  <Text style={styles.dateLabel}>Check-out</Text>
+                  <Text style={styles.dateValue}>{formatDate(endDate)}</Text>
+                </TouchableOpacity>
+              </View>
         <View style={styles.priceContainer}>
-          <Text style={styles.priceLabel}>Price per night</Text>
-          <Text style={styles.price}>${safeRoom.price}<Text style={styles.perNight}>/night</Text></Text>
+                <Text style={styles.priceLabel}>Total Price</Text>
+                <Text style={styles.price}>₹{calculateTotalPrice()}</Text>
+              </View>
         </View>
-        <TouchableOpacity style={styles.bookButton}>
+            <TouchableOpacity 
+              style={[styles.bookButton, bookingLoading && styles.bookButtonDisabled]}
+              onPress={handleBookNow}
+              disabled={bookingLoading}
+            >
+              {bookingLoading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
           <Text style={styles.bookButtonText}>Book Now</Text>
+              )}
         </TouchableOpacity>
+          </>
+        )}
       </View>
+
+      {showDatePicker && (
+        <DateTimePicker
+          value={datePickerMode === 'start' ? startDate : endDate}
+          mode="date"
+          display="default"
+          onChange={handleDateChange}
+          minimumDate={datePickerMode === 'end' ? startDate : new Date()}
+        />
+      )}
     </SafeAreaView>
   );
 };
@@ -559,6 +536,31 @@ const styles = StyleSheet.create({
     borderTopColor: '#eee',
     backgroundColor: '#fff',
   },
+  bookingContainer: {
+    flex: 1,
+    marginRight: 15,
+  },
+  dateContainer: {
+    flexDirection: 'row',
+    marginBottom: 8,
+  },
+  dateButton: {
+    flex: 1,
+    marginRight: 8,
+    padding: 8,
+    backgroundColor: '#f8f8f8',
+    borderRadius: 8,
+  },
+  dateLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 4,
+  },
+  dateValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+  },
   priceContainer: {
     flex: 1,
   },
@@ -570,10 +572,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: '#007AFF',
-  },
-  perNight: {
-    fontSize: 14,
-    color: '#666',
   },
   bookButton: {
     backgroundColor: '#007AFF',
@@ -660,6 +658,24 @@ const styles = StyleSheet.create({
     flex: 1,
     height: '100%',
     width: '100%',
+  },
+  ownerMessage: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#E8F2FF',
+    padding: 15,
+    borderRadius: 8,
+  },
+  ownerMessageText: {
+    marginLeft: 8,
+    fontSize: 16,
+    color: '#007AFF',
+    fontWeight: '600',
+  },
+  bookButtonDisabled: {
+    opacity: 0.7,
   },
 });
 

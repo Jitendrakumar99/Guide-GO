@@ -2,20 +2,25 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   StyleSheet,
-  TextInput,
+  Alert,
+  ActivityIndicator,
   KeyboardAvoidingView,
-  ScrollView,
   Platform,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import StatusBar from '../../components/StatusBar';
+import { signupUser } from '../../utils/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const SignUp = ({ navigation, route }) => {
+const Signup = ({ navigation, route }) => {
   const { setIsAuthenticated } = route.params;
-
   const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -23,45 +28,59 @@ const SignUp = ({ navigation, route }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const handleInputChange = (name, value) => {
-    setFormData(prevState => ({
-      ...prevState,
-      [name]: value
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
     }));
   };
 
-  const handleEmailSignup = async () => {
-    // Log signup information
-    console.log('Signup Form Data:', {
-      email: formData.email,
-      password: formData.password,
-      confirmPassword: formData.confirmPassword,
-    });
-
-    if (!formData.email || !formData.password || !formData.confirmPassword) {
+  const validateForm = () => {
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.password || !formData.confirmPassword) {
       setError('Please fill in all fields');
-      return;
+      return false;
     }
 
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
-      return;
+      return false;
     }
 
     if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters');
+      setError('Password must be at least 6 characters long');
+      return false;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError('Please enter a valid email address');
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleSignup = async () => {
+    if (!validateForm()) {
       return;
     }
 
     try {
       setLoading(true);
-      // TODO: Implement your own authentication logic here
-      console.log('User signup successful');
+      setError(null);
+
+      const { confirmPassword, ...signupData } = formData;
+      const response = await signupUser(signupData);
+
+      // Store the token and user data
+      await AsyncStorage.setItem('userToken', response.token);
+      await AsyncStorage.setItem('userData', JSON.stringify(response.user));
+
+      // Update authentication state
       setIsAuthenticated(true);
-      navigation.replace('MainTabs');
     } catch (error) {
-      console.error('Signup error:', error);
-      setError(error.message);
+      setError(error.message || 'Signup failed. Please try again.');
+      Alert.alert('Signup Error', error.message || 'Signup failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -79,10 +98,31 @@ const SignUp = ({ navigation, route }) => {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
-          bounces={false}
         >
           <View style={styles.formContainer}>
             <Text style={styles.title}>Create Account</Text>
+            <Text style={styles.subtitle}>Join us and start your journey</Text>
+
+            {error && <Text style={styles.errorText}>{error}</Text>}
+
+            <View style={styles.nameContainer}>
+              <TextInput
+                style={[styles.input, styles.nameInput]}
+                placeholder="First Name"
+                value={formData.firstName}
+                onChangeText={(value) => handleInputChange('firstName', value)}
+                autoCapitalize="words"
+                autoComplete="given-name"
+              />
+              <TextInput
+                style={[styles.input, styles.nameInput]}
+                placeholder="Last Name"
+                value={formData.lastName}
+                onChangeText={(value) => handleInputChange('lastName', value)}
+                autoCapitalize="words"
+                autoComplete="family-name"
+              />
+            </View>
 
             <TextInput
               style={styles.input}
@@ -91,6 +131,7 @@ const SignUp = ({ navigation, route }) => {
               onChangeText={(value) => handleInputChange('email', value)}
               keyboardType="email-address"
               autoCapitalize="none"
+              autoComplete="email"
             />
 
             <TextInput
@@ -99,6 +140,7 @@ const SignUp = ({ navigation, route }) => {
               value={formData.password}
               onChangeText={(value) => handleInputChange('password', value)}
               secureTextEntry
+              autoComplete="password-new"
             />
 
             <TextInput
@@ -107,18 +149,19 @@ const SignUp = ({ navigation, route }) => {
               value={formData.confirmPassword}
               onChangeText={(value) => handleInputChange('confirmPassword', value)}
               secureTextEntry
+              autoComplete="password-new"
             />
-
-            {error && <Text style={styles.errorText}>{error}</Text>}
             
             <TouchableOpacity 
               style={styles.signupButton}
-              onPress={handleEmailSignup}
+              onPress={handleSignup}
               disabled={loading}
             >
-              <Text style={styles.signupButtonText}>
-                {loading ? 'Creating Account...' : 'Sign Up'}
-              </Text>
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.signupButtonText}>Create Account</Text>
+              )}
             </TouchableOpacity>
 
             <TouchableOpacity 
@@ -126,7 +169,7 @@ const SignUp = ({ navigation, route }) => {
               onPress={() => navigation.navigate('Login')}
             >
               <Text style={styles.loginText}>
-                Already have an account? <Text style={styles.loginLinkText}>Log In</Text>
+                Already have an account? <Text style={styles.loginLinkText}>Sign In</Text>
               </Text>
             </TouchableOpacity>
           </View>
@@ -146,19 +189,31 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 20,
+    justifyContent: 'center',
   },
   formContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingTop: Platform.OS === 'android' ? 40 : 20,
-    paddingBottom: 20,
+    padding: 20,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#666',
     marginBottom: 30,
     textAlign: 'center',
+  },
+  nameContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 15,
+  },
+  nameInput: {
+    width: '48%',
   },
   input: {
     backgroundColor: '#f5f5f5',
@@ -166,8 +221,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 15,
     fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#ddd',
   },
   signupButton: {
     backgroundColor: '#007AFF',
@@ -178,8 +231,8 @@ const styles = StyleSheet.create({
   },
   signupButtonText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontWeight: '600',
   },
   loginLink: {
     marginTop: 20,
@@ -187,11 +240,11 @@ const styles = StyleSheet.create({
   },
   loginText: {
     color: '#666',
-    fontSize: 14,
+    fontSize: 16,
   },
   loginLinkText: {
     color: '#007AFF',
-    fontWeight: '500',
+    fontWeight: '600',
   },
   errorText: {
     color: '#ff3b30',
@@ -200,4 +253,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default SignUp;
+export default Signup;

@@ -112,13 +112,13 @@ const HomeScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <View style={styles.safeArea}>
       <StatusBar />
       <View style={styles.container}>
         <View style={styles.header}>
           <View>
             <Text style={styles.greeting}>Hello,</Text>
-            <Text style={styles.userName}>John Doe</Text>
+            <Text style={styles.userName}>Jitendra</Text>
           </View>
           <TouchableOpacity 
             style={styles.profileButton}
@@ -175,7 +175,7 @@ const HomeScreen = () => {
           </View>
         </ScrollView>
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -187,6 +187,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+    paddingTop: 0,
   },
   searchContainer: {
     flexDirection: 'row',
@@ -214,7 +215,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 15,
-    paddingTop: 10,
+    paddingTop: 0,
     backgroundColor: '#fff',
   },
   greeting: {

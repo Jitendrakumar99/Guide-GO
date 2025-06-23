@@ -102,7 +102,7 @@ const TourScreen = ({ navigation }) => {
   });
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       
       {/* Header Section */}
@@ -172,7 +172,7 @@ const TourScreen = ({ navigation }) => {
           ))}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -180,10 +180,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+    paddingTop: 0,
   },
   headerContainer: {
     paddingHorizontal: 20,
-    paddingTop: 10,
+    paddingTop: 0,
     paddingBottom: 15,
     backgroundColor: '#fff',
   },

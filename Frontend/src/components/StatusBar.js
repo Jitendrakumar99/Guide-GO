@@ -6,7 +6,8 @@ const StatusBar = ({ backgroundColor = 'transparent', barStyle = 'light-content'
     <RNStatusBar
       barStyle={barStyle}
       backgroundColor={backgroundColor}
-      translucent
+      translucent={false}
+      animated={true}
     />
   );
 };

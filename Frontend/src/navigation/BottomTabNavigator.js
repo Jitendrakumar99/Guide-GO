@@ -1,7 +1,8 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import { Platform } from 'react-native';
+import { Platform, TouchableOpacity, View, Text } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 
 import {
   HomeStack,
@@ -12,6 +13,52 @@ import {
 } from './StackNavigators';
 
 const Tab = createBottomTabNavigator();
+
+function HamburgerMenu() {
+  const navigation = useNavigation();
+  return (
+    <TouchableOpacity
+      onPress={() => navigation.openDrawer()}
+      style={{
+        marginLeft: 10,
+        marginRight: 8,
+        padding: 8,
+        borderRadius: 20,
+        backgroundColor: '#F0F4FF',
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.08,
+        shadowRadius: 2,
+        elevation: 2,
+      }}
+      activeOpacity={0.7}
+    >
+      <Ionicons name="menu" size={32} color="#007AFF" />
+    </TouchableOpacity>
+  );
+}
+
+function HeaderTitle() {
+  return (
+    <Text
+      style={{
+        fontSize: 22,
+        fontWeight: 'bold',
+        color: '#007AFF',
+        marginLeft: 6,
+        fontFamily: Platform.OS === 'ios' ? 'AvenirNext-Bold' : 'sans-serif-medium',
+        letterSpacing: 1,
+        textShadowColor: '#E0E7FF',
+        textShadowOffset: { width: 1, height: 1 },
+        textShadowRadius: 2,
+      }}
+    >
+      The Guide&Go
+    </Text>
+  );
+}
 
 const BottomTabNavigator = () => {
   return (
@@ -55,7 +102,9 @@ const BottomTabNavigator = () => {
         },
         tabBarActiveTintColor: '#007AFF',
         tabBarInactiveTintColor: 'gray',
-        headerShown: false,
+        headerShown: true,
+        headerLeft: () => <HamburgerMenu />, 
+        headerTitle: () => <HeaderTitle />, 
         tabBarStyle: {
           backgroundColor: '#FFFFFF',
           borderTopWidth: 1,

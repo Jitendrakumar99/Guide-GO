@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -7,13 +7,16 @@ import {
   Image,
   TouchableOpacity,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import StatusBar from '../../components/StatusBar';
+import { getCurrentUser } from '../../utils/api';
 
 const { width } = Dimensions.get('window');
-
+const backend_url="http://192.168.141.31:3000"||process.env.backend_url;
+const defaultImage = require('../../../assets/photo/toyota-innova.jpg');
 const FeatureItem = ({ icon, text }) => (
   <View style={styles.featureItem}>
     <Ionicons name={icon} size={24} color="#007AFF" />
@@ -23,6 +26,7 @@ const FeatureItem = ({ icon, text }) => (
 
 const VehicleDetails = ({ route, navigation }) => {
   const { vehicle } = route.params;
+  const [isOwner, setIsOwner] = useState(false);
 
   const getFeatureIcon = (feature) => {
     switch (feature.toLowerCase()) {
@@ -38,6 +42,30 @@ const VehicleDetails = ({ route, navigation }) => {
     }
   };
 
+  const handleBookNow = async () => {
+    if (isOwner) {
+      Alert.alert('Cannot Book', 'You cannot book your own listing.');
+      return;
+    }
+
+    try {
+      // Get current user data for validation
+      const userData = await getCurrentUser();
+      if (!userData) {
+        throw new Error('Please login to book a vehicle');
+      }
+
+      // Navigate to booking form with existing vehicle data
+      navigation.navigate('BookingForm', {
+        listing: vehicle,  // vehicle already contains owner information
+        listingType: 'vehicle'
+      });
+    } catch (error) {
+      console.error('Booking error:', error);
+      Alert.alert('Error', error.message || 'Failed to proceed with booking');
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
@@ -45,7 +73,7 @@ const VehicleDetails = ({ route, navigation }) => {
         {/* Header Image */}
         <View style={styles.imageContainer}>
           <Image 
-            source={vehicle.image} 
+            source={vehicle.images?.[0] ? { uri: `${backend_url}/${vehicle.images[0]}` } : defaultImage} 
             style={styles.image} 
             resizeMode="cover"
           />
@@ -108,7 +136,7 @@ const VehicleDetails = ({ route, navigation }) => {
           <Text style={styles.priceLabel}>Price per day</Text>
           <Text style={styles.price}>${vehicle.price}<Text style={styles.perDay}>/day</Text></Text>
         </View>
-        <TouchableOpacity style={styles.bookButton}>
+        <TouchableOpacity style={styles.bookButton} onPress={handleBookNow}>
           <Text style={styles.bookButtonText}>Book Now</Text>
         </TouchableOpacity>
       </View>

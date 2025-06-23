@@ -99,20 +99,19 @@ export default function OnboardingScreen({ navigation, route }) {
   const viewConfig = useRef({ viewAreaCoveragePercentThreshold: 50 }).current;
 
   const handleSkip = () => {
-    navigation.navigate("Login");
+    onComplete();
   };
 
   const handleCreateAccount = () => {
-    navigation.navigate("Signup");
+    onComplete();
   };
 
   const handleLogin = () => {
-    navigation.navigate("Login");
+    onComplete();
   };
 
   const handleOnboardingComplete = () => {
     onComplete();
-    // Navigation will happen automatically due to state change in App.js
   };
 
   const renderMedia = (item, index) => {
@@ -224,7 +223,7 @@ export default function OnboardingScreen({ navigation, route }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
       <FlatList
         data={onboardingData}
         renderItem={renderItem}
@@ -277,6 +276,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     backgroundColor: '#000',
+    alignSelf: 'center',
   },
   backgroundVideo: {
     position: 'absolute',
@@ -286,6 +286,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: '100%',
     height: '100%',
+    borderRadius: 20,
   },
   backgroundImage: {
     position: 'absolute',
