@@ -2,10 +2,7 @@ const mongoose = require("mongoose");
 
 const guideSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  image: {
-    type: String,
-    required: true,
-  },
+  images: [String],
   title: {
     type: String,
     required: true,
@@ -50,9 +47,10 @@ const guideSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  ratings: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Rating' }],
   createdAt: { type: Date, default: Date.now },
 });
 
-guideSchema.index({ city: 1, state: 1 });
+// guideSchema.index({ city: 1, state: 1 });
 
 module.exports = mongoose.model("Guide", guideSchema); 

@@ -34,7 +34,8 @@ const roomSchema = new mongoose.Schema({
   images: [String],
   amenities: [String],
   available: { type: Boolean, default: true },
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
+  ratings: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Rating' }]
 });
 
 roomSchema.index({ location: "2dsphere" });

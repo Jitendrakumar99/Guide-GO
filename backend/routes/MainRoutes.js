@@ -18,19 +18,19 @@ const { deleteUser } = require('../controllers/delete/userDelete');
 const { login } = require('../controllers/auth/authController');
 
 // Room Controllers
-const { createRoom } = require('../controllers/insert/roomInsert');
+const { createRoom, addRoomRating } = require('../controllers/insert/roomInsert');
 const { getAllRooms, getRoomById } = require('../controllers/read/roomRead');
 const { updateRoom } = require('../controllers/update/roomUpdate');
 const { deleteRoom } = require('../controllers/delete/roomDelete');
 
 // Vehicle Controllers
-const { createVehicle } = require('../controllers/insert/vehicleInsert');
+const { createVehicle, addVehicleRating } = require('../controllers/insert/vehicleInsert');
 const { getAllVehicles, getVehicleById } = require('../controllers/read/vehicleRead');
 const { updateVehicle } = require('../controllers/update/vehicleUpdate');
 const { deleteVehicle } = require('../controllers/delete/vehicleDelete');
 
 // Guide Controllers
-const { createGuide } = require('../controllers/insert/guideInsert');
+const { createGuide, addGuideRating } = require('../controllers/insert/guideInsert');
 const { getAllGuides, getGuideById } = require('../controllers/read/guideRead');
 const { updateGuide } = require('../controllers/update/guideUpdate');
 const { deleteGuide } = require('../controllers/delete/guideDelete');
@@ -123,5 +123,10 @@ router.post('/auth/login', login);
 // ==================== Image Upload Routes ====================
 router.post('/upload/image', auth, upload.single('image'), uploadImage);
 router.post('/upload/images', auth, upload.array('images', 10), uploadMultipleImages);
+
+// ==================== Rating Routes ====================
+router.post('/rooms/:id/ratings', auth, addRoomRating);
+router.post('/vehicles/:id/ratings', auth, addVehicleRating);
+router.post('/guides/:id/ratings', auth, addGuideRating);
 
 module.exports = router;

@@ -12,6 +12,8 @@ import {
   Dimensions
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { getRatings, submitRating, getCurrentUser } from '../../utils/api';
+import { log } from 'console';
 
 const { width } = Dimensions.get('window');
 
@@ -51,106 +53,70 @@ const RatingBar = ({ percentage, count, rating }) => {
   );
 };
 
-const RoomRating = ({ roomId, roomName }) => {
+const ReviewRating = ({ itemId, itemType }) => {
+  console.log('ReviewRating component mounted with itemId:', itemId, 'and itemType:', itemType);
   const [userRating, setUserRating] = useState(0);
   const [reviewText, setReviewText] = useState('');
   const [reviews, setReviews] = useState([]);
   const [openRate, setOpenRate] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [reviewName, setReviewName] = useState('');
-  const [filter, setFilter] = useState('all'); // 'all', 'positive', 'negative'
+  const [filter, setFilter] = useState('all'); 
   const [hasError, setHasError] = useState(false);
-
-  // Sample review data for demonstration
-  const sampleReviews = [
-    {
-      id: 1,
-      name: "Emily Johnson",
-      avatar: "https://randomuser.me/api/portraits/women/44.jpg",
-      rating: 5,
-      date: "2 days ago",
-      text: "Absolutely loved my stay here! The room was spotless, beautifully decorated and had all the amenities I needed. The staff was incredibly friendly and helpful. Would definitely recommend and stay again!"
-    },
-    {
-      id: 2,
-      name: "Michael Chen",
-      avatar: "https://randomuser.me/api/portraits/men/32.jpg",
-      rating: 4,
-      date: "1 week ago",
-      text: "Great location and comfortable room. The bed was very cozy and I slept well. Only small issue was the WiFi was a bit slow at times, but otherwise a perfect stay."
-    },
-    {
-      id: 3,
-      name: "Sarah Williams",
-      avatar: "https://randomuser.me/api/portraits/women/67.jpg",
-      rating: 3,
-      date: "2 weeks ago",
-      text: "Decent room for the price. Location is convenient to many attractions. Room was clean but a bit smaller than I expected from the photos."
-    },
-    {
-      id: 4,
-      name: "James Wilson",
-      avatar: "https://randomuser.me/api/portraits/men/52.jpg",
-      rating: 5,
-      date: "1 month ago",
-      text: "Exceptional service and beautiful accommodations. The room was spacious and well-appointed. The staff went above and beyond to make our stay special."
-    }
-  ];
+  const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
-    // Simulating fetching reviews from API
     setLoading(true);
-    setTimeout(() => {
-      setReviews(sampleReviews);
-      setLoading(false);
-    }, 1000);
+    let query = {};
+    if (itemType === 'room') query.roomId = itemId;
+    if (itemType === 'vehicle') query.vehicleId = itemId;
+    if (itemType === 'guide') query.guideId = itemId;
+    getRatings(query)
+      .then(data => {
+        setReviews(data.ratings || []);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [itemId, itemType]);
+
+  useEffect(() => {
+    getCurrentUser()
+      .then(user => setCurrentUser(user))
+      .catch(() => setCurrentUser(null));
   }, []);
 
   const handleSubmitReview = () => {
-    if (userRating === 0) {
+    if (userRating === 0 || reviewText.trim() === '') {
       setHasError(true);
       return;
     }
-    
-    if (reviewText.trim() === '') {
-      setHasError(true);
-      return;
-    }
-    
     setLoading(true);
-    
-    // Simulate API call to post review
-    setTimeout(() => {
-      const newReview = {
-        id: reviews.length + 1,
-        name: reviewName || 'Anonymous User',
-        avatar: `https://randomuser.me/api/portraits/men/${Math.floor(Math.random() * 100)}.jpg`,
-        rating: userRating,
-        date: 'Just now',
-        text: reviewText
-      };
-      
-      setReviews([newReview, ...reviews]);
-      setReviewText('');
-      setReviewName('');
-      setUserRating(0);
-      setOpenRate(false);
-      setHasError(false);
-      setLoading(false);
-    }, 1000);
+    submitRating({
+      itemId,
+      itemType,
+      rating: userRating,
+      text: reviewText,
+      name: currentUser?.name || 'Anonymous User',
+      avatar: currentUser?.profilePic || '',
+    })
+      .then(newReview => {
+        setReviews([newReview, ...reviews]);
+        setReviewText('');
+        setUserRating(0);
+        setOpenRate(false);
+        setHasError(false);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
   };
 
   const calculateRatingStats = () => {
     let total = 0;
     const counts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
-    
     reviews.forEach(review => {
       total += review.rating;
       counts[review.rating]++;
     });
-    
     const average = reviews.length > 0 ? (total / reviews.length).toFixed(1) : '0.0';
-    
     return {
       average,
       counts,
@@ -208,9 +174,15 @@ const RoomRating = ({ roomId, roomName }) => {
       {openRate && (
         <View style={styles.reviewForm}>
           <Text style={styles.reviewFormTitle}>Share Your Experience</Text>
-          <View style={styles.formField}>
+          {currentUser && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+              <Image
+                source={{ uri: currentUser.profilePic || 'https://randomuser.me/api/portraits/men/1.jpg' }}
+                style={{ width: 36, height: 36, borderRadius: 18, marginRight: 10 }}
+              />
+              <Text style={{ fontWeight: '600', fontSize: 16 }}>{currentUser.name}</Text>
           </View>
-          
+          )}
           <View style={styles.formField}>
             <Text style={styles.fieldLabel}>Rating<Text style={styles.required}>*</Text></Text>
             <RatingStars 
@@ -222,7 +194,6 @@ const RoomRating = ({ roomId, roomName }) => {
               <Text style={styles.errorText}>Please select a rating</Text>
             )}
           </View>
-          
           <View style={styles.formField}>
             <Text style={styles.fieldLabel}>Your Review<Text style={styles.required}>*</Text></Text>
             <TextInput
@@ -237,7 +208,6 @@ const RoomRating = ({ roomId, roomName }) => {
               <Text style={styles.errorText}>Please write a review</Text>
             )}
           </View>
-          
           <View style={styles.formActions}>
             <TouchableOpacity 
               style={styles.cancelButton}
@@ -248,7 +218,6 @@ const RoomRating = ({ roomId, roomName }) => {
             >
               <Text style={styles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
-            
             <TouchableOpacity
               style={styles.submitButton}
               onPress={()=>handleSubmitReview()}
@@ -266,7 +235,6 @@ const RoomRating = ({ roomId, roomName }) => {
 
       {/* Filter Options */}
       <View style={styles.filterContainer}>
-        {/* <Text style={styles.filterLabel}>Filter:</Text> */}
         <TouchableOpacity 
           style={[styles.filterButton, filter === 'all' && styles.activeFilter]}
           onPress={() => setFilter('all')}
@@ -298,18 +266,18 @@ const RoomRating = ({ roomId, roomName }) => {
         {reviews.length>0 && <Text style={styles.reviewsTitle}>{filteredReviews.length} Reviews</Text>}
           <FlatList
             data={filteredReviews}
-            keyExtractor={item => item.id.toString()}
+            keyExtractor={item => item._id ? item._id.toString() : item.id?.toString() || Math.random().toString()}
             renderItem={({ item }) => (
               <View style={styles.reviewItem}>
                 <View style={styles.reviewHeader}>
                   <Image 
-                    source={{ uri: item.avatar }} 
+                    source={{ uri: item.avatar || 'https://randomuser.me/api/portraits/men/1.jpg' }} 
                     style={styles.avatar}
                     defaultSource={require('../../../assets/photo/pac1.jpg')}
                   />
                   <View style={styles.reviewerInfo}>
                     <Text style={styles.reviewerName}>{item.name}</Text>
-                    <Text style={styles.reviewDate}>{item.date}</Text>
+                    <Text style={styles.reviewDate}>{item.date ? item.date : ''}</Text>
                   </View>
                   <View style={styles.reviewRating}>
                     <RatingStars rating={item.rating} size={16} disabled={true} />
@@ -335,8 +303,6 @@ const RoomRating = ({ roomId, roomName }) => {
                   )
                 ) : null
               }
-              
-              
           />
         </>
       )}
@@ -624,4 +590,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default RoomRating;
+export default ReviewRating;

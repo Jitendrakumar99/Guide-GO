@@ -40,6 +40,7 @@ const vehicleSchema = new mongoose.Schema({
   amenities: [String], // Optional: e.g., ['Helmet Included', 'GPS']
   available: { type: Boolean, default: true },
   createdAt: { type: Date, default: Date.now },
+  ratings: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Rating' }],
 });
 
 vehicleSchema.index({ location: "2dsphere" });

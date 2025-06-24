@@ -16,7 +16,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
-import RoomRating from './ReviewRating';
+import ReviewRating  from './ReviewRating';
 import { checkListingOwnership, createBooking, getCurrentUser } from '../../utils/api';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
@@ -239,14 +239,20 @@ const RoomDetails = ({ route, navigation }) => {
         {Array.isArray(safeRoom.gallery) && safeRoom.gallery.length > 0 && (
             <>
               <Text style={styles.sectionTitle}>Gallery</Text>
-            <FlatList
-              data={safeRoom.gallery}
-              renderItem={renderGalleryItem}
-              keyExtractor={(_, index) => index.toString()}
+              <ScrollView 
                 horizontal 
                 showsHorizontalScrollIndicator={false}
                 style={styles.gallery}
-            />
+              >
+                {safeRoom.gallery.map((item, index) => (
+                  <Image 
+                    key={index}
+                    source={typeof item === 'string' ? { uri: item } : item}
+                    style={styles.galleryImage}
+                    resizeMode="cover"
+                  />
+                ))}
+              </ScrollView>
             </>
           )}
 
@@ -261,7 +267,7 @@ const RoomDetails = ({ route, navigation }) => {
 
           {/* Ratings & Reviews */}
           <Text style={styles.sectionTitle}>Ratings & Reviews</Text>
-          <RoomRating />
+          <ReviewRating itemId={safeRoom._id} itemType="room" />
 
           {/* Location Map */}
           <Text style={styles.sectionTitle}>Location</Text>

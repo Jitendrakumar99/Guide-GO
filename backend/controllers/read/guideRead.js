@@ -11,7 +11,9 @@ exports.getAllGuides = async (req, res) => {
 
 exports.getGuideById = async (req, res) => {
   try {
-    const guide = await Guide.findById(req.params.id).populate('user', 'name email');
+    const guide = await Guide.findById(req.params.id)
+      .populate('user', 'name email')
+      .populate('ratings');
     if (!guide) {
       return res.status(404).json({ message: 'Guide not found' });
     }

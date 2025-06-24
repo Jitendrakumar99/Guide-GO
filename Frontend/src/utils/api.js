@@ -36,7 +36,7 @@ const fetchWithTimeout = async (url, options, timeout = 10000) => {
 
 const handleResponse = async (response) => {
   console.log('Response received:', {
-    status: response.status,
+    // status: response.status,
   //   statusText: response.statusText,
   //   headers: Object.fromEntries(response.headers.entries())
   });
@@ -47,7 +47,8 @@ const handleResponse = async (response) => {
     throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
   }
   const data = await response.json();
-  console.log('Response data:', data);
+  // console.log('Response data:', da
+  // ta);
   return data;
 };
 
@@ -120,7 +121,7 @@ export const loginUser = async (email, password) => {
       'Content-Type': 'application/json',
       'Accept': 'application/json'
     });
-    console.log('Body:', { email, password: '***' });
+    // console.log('Body:', { email, password: '***' });
     
     const response = await fetchWithTimeout(
       `${API_BASE_URL}/auth/login`,
@@ -158,7 +159,7 @@ export const signupUser = async (userData) => {
       'Content-Type': 'application/json',
       'Accept': 'application/json'
     });
-    console.log('Body:', { ...userData, password: '***' });
+    // console.log('Body:', { ...userData, password: '***' });
     
     const response = await fetchWithTimeout(
       `${API_BASE_URL}/users`,
@@ -296,7 +297,7 @@ export const updateUser = async (userData) => {
       'Content-Type': 'application/json',
       'Accept': 'application/json'
     });
-    console.log('Body:', { ...userData, password: '***' });
+    // console.log('Body:', { ...userData, password: '***' });
     
     const response = await fetchWithTimeout(
       `${API_BASE_URL}/users/me`,
@@ -443,11 +444,11 @@ export const createRoom = async (roomData) => {
     console.log('=== Create Room Request Starting ===');
     console.log('URL:', `${API_BASE_URL}/rooms`);
     console.log('Method: POST');
-    console.log('Headers:', {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-      'Accept': 'application/json'
-    });
+    // console.log('Headers:', {
+    //   'Authorization': `Bearer ${token}`,
+    //   'Content-Type': 'application/json',
+    //   'Accept': 'application/json'
+    // });
     console.log('Body:', roomDataWithOwner);
     
     const response = await fetchWithTimeout(
@@ -494,11 +495,11 @@ export const createVehicle = async (vehicleData) => {
     console.log('=== Create Vehicle Request Starting ===');
     console.log('URL:', `${API_BASE_URL}/vehicles`);
     console.log('Method: POST');
-    console.log('Headers:', {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-      'Accept': 'application/json'
-    });
+    // console.log('Headers:', {
+    //   'Authorization': `Bearer ${token}`,
+    //   'Content-Type': 'application/json',
+    //   'Accept': 'application/json'
+    // });
     console.log('Body:', vehicleDataWithOwner);
     
     const response = await fetchWithTimeout(
@@ -1157,5 +1158,59 @@ export const getUserEarningsHistory = async (page = 1, limit = 10) => {
   } catch (error) {
     console.error('Error fetching earnings history:', error);
     throw error;
+  }
+};
+
+// Fetch ratings for a room, guide, or vehicle from the parent document
+export const getRatings = async ({ roomId, guideId, vehicleId }) => {
+  try {
+    let url = '';
+    if (roomId) url = `${API_BASE_URL}/rooms/${roomId}`;
+    if (guideId) url = `${API_BASE_URL}/guides/${guideId}`;
+    if (vehicleId) url = `${API_BASE_URL}/vehicles/${vehicleId}`;
+    
+    if (!url) throw new Error('Missing roomId, guideId, or vehicleId for getRatings');
+    
+    const response = await fetchWithTimeout(
+      url,
+      {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json'
+        }
+      }
+    );
+    const data = await handleResponse(response);
+    return { ratings: data.ratings || [] };
+  } catch (error) {
+    return handleError(error);
+  }
+};
+
+// Submit a new rating to the correct parent endpoint
+export const submitRating = async ({ itemId, itemType, ...data }) => {
+  try {
+    const token = await getAuthToken();
+    let url = '';
+    console.log('submitRating called with:', { itemId, itemType });
+    if (itemType === 'room') url = `${API_BASE_URL}/rooms/${itemId}/ratings`;
+    if (itemType === 'vehicle') url = `${API_BASE_URL}/vehicles/${itemId}/ratings`;
+    if (itemType === 'guide') url = `${API_BASE_URL}/guides/${itemId}/ratings`;
+    if (!url) throw new Error('Missing itemType or itemId for submitRating');
+    const response = await fetchWithTimeout(
+      url,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        },
+        body: JSON.stringify(data)
+      }
+    );
+    return handleResponse(response);
+  } catch (error) {
+    return handleError(error);
   }
 }; 

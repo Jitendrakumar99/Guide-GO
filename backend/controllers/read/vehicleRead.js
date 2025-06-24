@@ -11,7 +11,9 @@ exports.getAllVehicles = async (req, res) => {
 
 exports.getVehicleById = async (req, res) => {
   try {
-    const vehicle = await Vehicle.findById(req.params.id).populate('owner', 'name email');
+    const vehicle = await Vehicle.findById(req.params.id)
+      .populate('owner', 'name email')
+      .populate('ratings');
     if (!vehicle) {
       return res.status(404).json({ message: 'Vehicle not found' });
     }
