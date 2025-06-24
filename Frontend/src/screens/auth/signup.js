@@ -72,12 +72,17 @@ const Signup = ({ navigation, route }) => {
       const { confirmPassword, ...signupData } = formData;
       const response = await signupUser(signupData);
 
-      // Store the token and user data
-      await AsyncStorage.setItem('userToken', response.token);
-      await AsyncStorage.setItem('userData', JSON.stringify(response.user));
-
-      // Update authentication state
-      setIsAuthenticated(true);
+      // Show success alert and navigate to Login after OK
+      Alert.alert(
+        'Signup Successful',
+        'Your account has been created. Please log in.',
+        [
+          {
+            text: 'OK',
+            onPress: () => navigation.navigate('Login')
+          }
+        ]
+      );
     } catch (error) {
       setError(error.message || 'Signup failed. Please try again.');
       Alert.alert('Signup Error', error.message || 'Signup failed. Please try again.');

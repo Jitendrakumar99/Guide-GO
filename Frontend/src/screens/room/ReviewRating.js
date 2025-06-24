@@ -73,7 +73,7 @@ const ReviewRating = ({ itemId, itemType }) => {
     getRatings(query)
       .then(data => {
         setReviews(data.ratings || []);
-        setLoading(false);
+      setLoading(false);
       })
       .catch(() => setLoading(false));
   }, [itemId, itemType]);
@@ -93,18 +93,18 @@ const ReviewRating = ({ itemId, itemType }) => {
     submitRating({
       itemId,
       itemType,
-      rating: userRating,
+        rating: userRating,
       text: reviewText,
       name: currentUser?.name || 'Anonymous User',
       avatar: currentUser?.profilePic || '',
     })
       .then(newReview => {
-        setReviews([newReview, ...reviews]);
-        setReviewText('');
-        setUserRating(0);
-        setOpenRate(false);
-        setHasError(false);
-        setLoading(false);
+      setReviews([newReview, ...reviews]);
+      setReviewText('');
+      setUserRating(0);
+      setOpenRate(false);
+      setHasError(false);
+      setLoading(false);
       })
       .catch(() => setLoading(false));
   };

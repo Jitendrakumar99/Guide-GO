@@ -4,8 +4,8 @@ const jwt = require('jsonwebtoken');
 
 exports.createUser = async (req, res) => {
   try {
-    const { email, password, name, phone } = req.body;
-
+    const { email, password, firstName, lastName, phone } = req.body;
+    console.log('Signup endpoint hit');
     // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -18,7 +18,9 @@ exports.createUser = async (req, res) => {
 
     // Create new user
     const user = new User({
-      name,
+      firstName,
+      lastName,
+      name: `${firstName} ${lastName}`,
       email,
       phone,
       password: hashedPassword,
@@ -39,6 +41,8 @@ exports.createUser = async (req, res) => {
       token,
       user: {
         id: savedUser._id,
+        firstName: savedUser.firstName,
+        lastName: savedUser.lastName,
         name: savedUser.name,
         email: savedUser.email,
         phone: savedUser.phone

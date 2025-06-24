@@ -2,7 +2,7 @@
 // const API_BASE_URL = 'http://localhost:3000';
 
 // Use this for mobile development (replace with your computer's IP address)
-const API_BASE_URL = 'http://192.168.137.1:3000'; // Updated to match device network
+const API_BASE_URL = 'http://192.168.141.31:3000'; // Updated to match device network
 
 // You can also use Platform.select to automatically choose the right URL
 // import { Platform } from 'react-native';
@@ -36,9 +36,9 @@ const fetchWithTimeout = async (url, options, timeout = 10000) => {
 
 const handleResponse = async (response) => {
   console.log('Response received:', {
-    // status: response.status,
-  //   statusText: response.statusText,
-  //   headers: Object.fromEntries(response.headers.entries())
+    status: response.status,
+    statusText: response.statusText,
+    headers: Object.fromEntries(response.headers.entries())
   });
   
   if (!response.ok) {
@@ -159,7 +159,7 @@ export const signupUser = async (userData) => {
       'Content-Type': 'application/json',
       'Accept': 'application/json'
     });
-    // console.log('Body:', { ...userData, password: '***' });
+    console.log('Body:', { ...userData, password: '***' });
     
     const response = await fetchWithTimeout(
       `${API_BASE_URL}/users`,

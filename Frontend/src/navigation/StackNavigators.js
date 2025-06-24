@@ -24,8 +24,18 @@ import EarningsScreen from '../screens/profile/EarningsScreen';
 import BookingDetailsScreen from '../screens/booking/BookingDetailsScreen';
 import UserBookingsScreen from '../screens/booking/UserBookingsScreen';
 import OwnerBookingsScreen from '../screens/booking/OwnerBookingsScreen';
+import Login from '../screens/auth/login';
+import Signup from '../screens/auth/signup';
 
 const Stack = createStackNavigator();
+
+// Auth Stack
+export const AuthStack = () => (
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="Login" component={Login} />
+    <Stack.Screen name="Signup" component={Signup} />
+  </Stack.Navigator>
+);
 
 // Home Stack
 export const HomeStack = () => (

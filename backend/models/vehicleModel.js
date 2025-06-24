@@ -35,9 +35,9 @@ const vehicleSchema = new mongoose.Schema({
   address: { type: String }, // Human-readable address
   pricePerDay: { type: Number, required: true },
   rating: { type: Number, default: 0 }, // Average rating
-  capacity: { type: Number }, // How many passengers
+  capacity: { type: Number }, 
   images: [String],
-  amenities: [String], // Optional: e.g., ['Helmet Included', 'GPS']
+  amenities: [String], 
   available: { type: Boolean, default: true },
   createdAt: { type: Date, default: Date.now },
   ratings: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Rating' }],
