@@ -18,13 +18,22 @@ const defaultImage = require('../../../assets/photo/pac-search-bg.jpg');
 const TourDetails = ({ route, navigation }) => {
   const { tour } = route.params;
 
+  // Use gallery images from tour.images if available, else fallback to default images
+  const galleryImages = tour.images && tour.images.length > 0
+    ? tour.images
+    : [
+        require('../../../assets/photo/03.jpg'),
+        require('../../../assets/photo/04.jpg'),
+        require('../../../assets/photo/05.jpg'),
+      ];
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header Image */}
         <View style={styles.imageContainer}>
           <Image 
-            source={tour.image || defaultImage} 
+            source={tour.image || galleryImages[0] || defaultImage} 
             style={styles.image}
             resizeMode="cover"
           />
@@ -87,23 +96,12 @@ const TourDetails = ({ route, navigation }) => {
           {/* Gallery */}
           <Text style={styles.sectionTitle}>Gallery</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.gallery}>
-            <Image source={require('../../../assets/photo/03.jpg')} style={styles.galleryImage} />
-            <Image source={require('../../../assets/photo/04.jpg')} style={styles.galleryImage} />
-            <Image source={require('../../../assets/photo/05.jpg')} style={styles.galleryImage} />
+            {galleryImages.map((img, idx) => (
+              <Image key={idx} source={img} style={styles.galleryImage} />
+            ))}
           </ScrollView>
         </View>
       </ScrollView>
-
-      {/* Bottom Bar */}
-      <View style={styles.bottomBar}>
-        <View style={styles.priceContainer}>
-          <Text style={styles.priceLabel}>Price per person</Text>
-          <Text style={styles.price}>${tour.price || '99'}</Text>
-        </View>
-        <TouchableOpacity style={styles.bookButton}>
-          <Text style={styles.bookButtonText}>Book Now</Text>
-        </TouchableOpacity>
-      </View>
     </SafeAreaView>
   );
 };
@@ -200,38 +198,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     marginBottom: 8,
-  },
-  bottomBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-    backgroundColor: '#fff',
-  },
-  priceContainer: {
-    flex: 1,
-  },
-  priceLabel: {
-    fontSize: 14,
-    color: '#666',
-  },
-  price: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#007AFF',
-  },
-  bookButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 30,
-    paddingVertical: 15,
-    borderRadius: 25,
-  },
-  bookButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
   },
   gallery: {
     marginTop: 10,

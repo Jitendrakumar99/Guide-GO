@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import StatusBar from '../../components/StatusBar';
+import { getCurrentUser } from '../../utils/api';
 
 const { width } = Dimensions.get('window');
 
@@ -44,8 +45,94 @@ const PopularCard = ({ image, title, description, price }) => (
   </TouchableOpacity>
 );
 
+const roomData = [
+  {
+    id: '1',
+    image: require('../../../assets/photo/10.jpg'),
+    title: 'Deluxe Room',
+    location: 'Mumbai, India',
+    price: '120',
+  },
+  {
+    id: '2',
+    image: require('../../../assets/photo/12.jpg'),
+    title: 'Sea View Suite',
+    location: 'Goa, India',
+    price: '200',
+  },
+  {
+    id: '3',
+    image: require('../../../assets/photo/14.jpg'),
+    title: 'Mountain Cabin',
+    location: 'Manali, India',
+    price: '150',
+  },
+];
+
+const vehicleData = [
+  {
+    id: '1',
+    image: require('../../../assets/photo/2015_mercedes-benz_c-class_34_1920x1080.jpg'),
+    title: 'Mercedes C-Class',
+    location: 'Delhi, India',
+    price: '80',
+  },
+  {
+    id: '2',
+    image: require('../../../assets/photo/New-2020-Honda-City.jpg'),
+    title: 'Honda City',
+    location: 'Bangalore, India',
+    price: '60',
+  },
+  {
+    id: '3',
+    image: require('../../../assets/photo/toyota-innova.jpg'),
+    title: 'Toyota Innova',
+    location: 'Hyderabad, India',
+    price: '70',
+  },
+];
+
+const RoomCard = ({ image, title, location, price, onPress }) => (
+  <TouchableOpacity style={styles.popularCard} onPress={onPress}>
+    <Image source={image} style={styles.popularImage} />
+    <View style={styles.popularContent}>
+      <Text style={styles.popularTitle}>{title}</Text>
+      <Text style={styles.popularDescription}>{location}</Text>
+      <Text style={styles.popularPrice}>${price}/night</Text>
+    </View>
+  </TouchableOpacity>
+);
+
+const VehicleCard = ({ image, title, location, price, onPress }) => (
+  <TouchableOpacity style={styles.popularCard} onPress={onPress}>
+    <Image source={image} style={styles.popularImage} />
+    <View style={styles.popularContent}>
+      <Text style={styles.popularTitle}>{title}</Text>
+      <Text style={styles.popularDescription}>{location}</Text>
+      <Text style={styles.popularPrice}>${price}/day</Text>
+    </View>
+  </TouchableOpacity>
+);
+
 const HomeScreen = () => {
   const navigation = useNavigation();
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const userData = await getCurrentUser();
+        setUser(userData);
+      } catch (err) {
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchUser();
+  }, []);
 
   const featuredData = [
     {
@@ -118,13 +205,20 @@ const HomeScreen = () => {
         <View style={styles.header}>
           <View>
             <Text style={styles.greeting}>Hello,</Text>
-            <Text style={styles.userName}>Sufiyan</Text>
+            <Text style={styles.userName}>{loading ? '...' : user?.name || 'User'}</Text>
           </View>
           <TouchableOpacity 
             style={styles.profileButton}
             onPress={() => navigation.navigate('Profile')}
           >
-            <Ionicons name="person-circle" size={40} color="#007AFF" />
+            {user?.profilePic ? (
+              <Image
+                source={{ uri: user.profilePic }}
+                style={{ width: 40, height: 40, borderRadius: 20 }}
+              />
+            ) : (
+              <Ionicons name="person-circle" size={40} color="#007AFF" />
+            )}
           </TouchableOpacity>
         </View>
 
@@ -156,19 +250,39 @@ const HomeScreen = () => {
             </ScrollView>
           </View>
 
+          {/* Available Rooms */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Popular Tours</Text>
-              <TouchableOpacity onPress={handleSeeAllPopular}>
+              <Text style={styles.sectionTitle}>Available Rooms</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Rooms', { screen: 'RoomScreen' })}>
                 <Text style={styles.seeAllText}>See All</Text>
-              </TouchableOpacity> 
+              </TouchableOpacity>
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {popularData.map(item => (
-                <PopularCard 
-                  key={item.id} 
+              {roomData.map(item => (
+                <RoomCard
+                  key={item.id}
                   {...item}
-                  onPress={() => handlePopularPress(item)}
+                  onPress={() => navigation.navigate('RoomDetails', { room: item })}
+                />
+              ))}
+            </ScrollView>
+          </View>
+
+          {/* Available Vehicles */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Available Vehicles</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Vehicles', { screen: 'VehicleScreen' })}>
+                <Text style={styles.seeAllText}>See All</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {vehicleData.map(item => (
+                <VehicleCard
+                  key={item.id}
+                  {...item}
+                  onPress={() => navigation.navigate('VehicleDetails', { vehicle: item })}
                 />
               ))}
             </ScrollView>
