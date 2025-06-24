@@ -2,7 +2,7 @@
 // const API_BASE_URL = 'http://localhost:3000';
 
 // Use this for mobile development (replace with your computer's IP address)
-const API_BASE_URL = 'http://192.168.141.31:3000'; // Updated to match device network
+const API_BASE_URL = 'http://192.168.137.1:3000'; // Updated to match device network
 
 // You can also use Platform.select to automatically choose the right URL
 // import { Platform } from 'react-native';

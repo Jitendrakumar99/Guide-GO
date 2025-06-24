@@ -118,7 +118,7 @@ const HomeScreen = () => {
         <View style={styles.header}>
           <View>
             <Text style={styles.greeting}>Hello,</Text>
-            <Text style={styles.userName}>Jitendra</Text>
+            <Text style={styles.userName}>Sufiyan</Text>
           </View>
           <TouchableOpacity 
             style={styles.profileButton}
