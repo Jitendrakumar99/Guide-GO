@@ -21,8 +21,7 @@ exports.createUserDirect = async ({ firstName, lastName, email, phone, password 
     name: `${firstName} ${lastName}`,
     email,
     phone,
-    password: hashedPassword,
-    location: null
+    password: hashedPassword
   });
 
   const savedUser = await user.save();

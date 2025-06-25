@@ -12,6 +12,7 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import StatusBar from '../../components/StatusBar';
 import { getAllVehicles } from '../../utils/api';
 import { 
@@ -24,7 +25,7 @@ import {
 
 const { width } = Dimensions.get('window');
 const defaultImage = require('../../../assets/photo/toyota-innova.jpg');
-const backend_url="http://192.168.141.31:3000"||process.env.backend_url;
+const backend_url="http://10.16.54.141:3000"||process.env.backend_url;
 
 const VehicleCard = ({ vehicle, onPress }) => (
   <TouchableOpacity style={styles.vehicleCard} onPress={onPress}>
@@ -80,11 +81,6 @@ const VehicleScreen = ({ navigation }) => {
     { label: '25km', value: 25 },
     { label: '50km', value: 50 }
   ];
-
-  useEffect(() => {
-    fetchVehicles();
-    getCurrentUserLocation();
-  }, []);
 
   const getCurrentUserLocation = async () => {
     try {
@@ -163,6 +159,13 @@ const VehicleScreen = ({ navigation }) => {
         return a.distance - b.distance;
       })
     : filteredVehicles;
+
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchVehicles();
+      getCurrentUserLocation();
+    }, [])
+  );
 
   if (loading) {
     return (

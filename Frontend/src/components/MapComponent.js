@@ -32,7 +32,7 @@ const MapComponent = ({
 
   // Ensure markers is always an array
   const safeMarkers = Array.isArray(markers) ? markers : [];
-
+  
   // Map type switcher
   const toggleMapType = () => {
     setMapType((prev) =>
@@ -103,7 +103,9 @@ const MapComponent = ({
       >
         {/* Markers */}
         {safeMarkers.map((marker, idx) => {
-          if (!marker || !marker.coordinate) return null;
+          if (!marker || !marker.coordinate) {
+            return null;
+          }
           return (
             <Marker
               key={idx}

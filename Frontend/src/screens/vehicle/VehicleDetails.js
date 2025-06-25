@@ -17,7 +17,7 @@ import ReviewRating from '../room/ReviewRating';
 import MapComponent from '../../components/MapComponent';
 
 const { width } = Dimensions.get('window');
-const backend_url="http://192.168.141.31:3000"||process.env.backend_url;
+const backend_url="http://10.16.54.141:3000"||process.env.backend_url;
 const defaultImage = require('../../../assets/photo/toyota-innova.jpg');
 const FeatureItem = ({ icon, text }) => (
   <View style={styles.featureItem}>
@@ -104,7 +104,7 @@ const VehicleDetails = ({ route, navigation }) => {
 
           <View style={styles.locationContainer}>
             <Ionicons name="location" size={20} color="#007AFF" />
-            <Text style={styles.location}>{vehicle.location}</Text>
+            <Text style={styles.location}>{vehicle.address || 'Location not specified'}</Text>
           </View>
 
           <Text style={styles.description}>{vehicle.description}</Text>
@@ -131,14 +131,14 @@ const VehicleDetails = ({ route, navigation }) => {
           </View>
 
           {/* Location Map */}
-          {vehicle.location?.coordinates && (
+          {vehicle.location?.coordinates && vehicle.location.coordinates.length === 2 && (
             <View style={styles.mapSection}>
               <Text style={styles.sectionTitle}>Location</Text>
               <View style={styles.mapContainer}>
                 <MapComponent
                   initialRegion={{
-                    latitude: vehicle.location.coordinates[1],
-                    longitude: vehicle.location.coordinates[0],
+                    latitude: parseFloat(vehicle.location.coordinates[1]) || 37.78825,
+                    longitude: parseFloat(vehicle.location.coordinates[0]) || -122.4324,
                     latitudeDelta: 0.01,
                     longitudeDelta: 0.01,
                   }}
@@ -149,8 +149,8 @@ const VehicleDetails = ({ route, navigation }) => {
                   markers={[
                     {
                       coordinate: {
-                        latitude: vehicle.location.coordinates[1],
-                        longitude: vehicle.location.coordinates[0],
+                        latitude: parseFloat(vehicle.location.coordinates[1]) || 37.78825,
+                        longitude: parseFloat(vehicle.location.coordinates[0]) || -122.4324,
                       },
                       title: vehicle.title,
                       description: vehicle.address || 'Vehicle location',
@@ -178,7 +178,7 @@ const VehicleDetails = ({ route, navigation }) => {
       <View style={styles.bottomBar}>
         <View style={styles.priceContainer}>
           <Text style={styles.priceLabel}>Price per day</Text>
-          <Text style={styles.price}>${vehicle.price}<Text style={styles.perDay}>/day</Text></Text>
+          <Text style={styles.price}>₹{vehicle.pricePerDay || vehicle.price || '0'}<Text style={styles.perDay}>/day</Text></Text>
         </View>
         <TouchableOpacity style={styles.bookButton} onPress={handleBookNow}>
           <Text style={styles.bookButtonText}>Book Now</Text>

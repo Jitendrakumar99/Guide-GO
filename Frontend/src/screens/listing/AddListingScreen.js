@@ -9,6 +9,7 @@ import {
   Alert,
   Platform,
   Switch,
+  Image,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -83,10 +84,40 @@ const AddListingScreen = ({ navigation }) => {
         return;
       }
 
+      // Show cropping options
+      Alert.alert(
+        'Select Image',
+        'Choose how you want to crop your image:',
+        [
+          {
+            text: 'Use Original',
+            onPress: () => pickImage(false, null)
+          },
+          {
+            text: 'Square Crop',
+            onPress: () => pickImage(true, [1, 1])
+          },
+          {
+            text: 'Free Crop',
+            onPress: () => pickImage(true, null)
+          },
+          {
+            text: 'Cancel',
+            style: 'cancel'
+          }
+        ]
+      );
+    } catch (error) {
+      Alert.alert('Error', 'Failed to pick image');
+    }
+  };
+
+  const pickImage = async (allowsEditing, aspect) => {
+    try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [4, 3],
+        allowsEditing: allowsEditing,
+        aspect: aspect,
         quality: 0.8,
       });
 
@@ -461,12 +492,47 @@ const AddListingScreen = ({ navigation }) => {
 
           <View style={styles.formGroup}>
             <Text style={styles.label}>Images *</Text>
-            <TouchableOpacity style={styles.imageUploadButton} onPress={handleImagePick}>
-              <Ionicons name="camera" size={24} color="#007AFF" />
-              <Text style={styles.imageUploadText}>Add Images</Text>
-            </TouchableOpacity>
+            <Text style={styles.subLabel}>Add at least one image for your listing</Text>
+            <Text style={styles.cropInfoText}>
+              💡 Tip: Choose "Use Original" to avoid cropping, or "Square Crop" for consistent listing images
+            </Text>
+            <View style={styles.imageContainer}>
+              {images.map((uri, index) => (
+                <View key={index} style={styles.imageWrapper}>
+                  <Image source={{ uri }} style={styles.image} />
+                  <TouchableOpacity 
+                    style={styles.deleteImageButton}
+                    onPress={() => {
+                      Alert.alert(
+                        'Delete Image',
+                        'Are you sure you want to delete this image?',
+                        [
+                          { text: 'Cancel', style: 'cancel' },
+                          {
+                            text: 'Delete',
+                            style: 'destructive',
+                            onPress: () => setImages(images.filter((_, i) => i !== index))
+                          }
+                        ]
+                      );
+                    }}
+                  >
+                    <Ionicons name="close-circle" size={20} color="#fff" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+              <TouchableOpacity 
+                style={styles.addImageButton}
+                onPress={handleImagePick}
+              >
+                <Ionicons name="add" size={24} color="#007AFF" />
+                <Text style={styles.addImageText}>Add Image</Text>
+              </TouchableOpacity>
+            </View>
             {images.length > 0 && (
-              <Text style={styles.imageCount}>{images.length} image(s) selected</Text>
+              <Text style={styles.imageCountText}>
+                {images.length} image{images.length !== 1 ? 's' : ''} selected
+              </Text>
             )}
           </View>
 
@@ -613,22 +679,50 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  imageUploadButton: {
+  imageContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#007AFF',
-    borderRadius: 8,
-    padding: 12,
-    borderStyle: 'dashed',
+    flexWrap: 'wrap',
+    gap: 8,
   },
-  imageUploadText: {
+  imageWrapper: {
+    width: 100,
+    height: 100,
+    borderRadius: 8,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+  },
+  deleteImageButton: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
+  },
+  addImageButton: {
+    width: 100,
+    height: 100,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderStyle: 'dashed',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addImageText: {
     color: '#007AFF',
     marginLeft: 8,
     fontSize: 16,
   },
-  imageCount: {
+  imageCountText: {
     marginTop: 8,
     color: '#666',
     fontSize: 14,
@@ -647,6 +741,14 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  subLabel: {
+    color: '#666',
+    fontSize: 14,
+  },
+  cropInfoText: {
+    color: '#666',
+    fontSize: 14,
   },
 });
 

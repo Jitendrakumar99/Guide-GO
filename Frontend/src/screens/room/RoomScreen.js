@@ -12,6 +12,7 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import StatusBar from '../../components/StatusBar';
 import { getAllRooms } from '../../utils/api';
 import { 
@@ -24,7 +25,7 @@ import {
 
 const { width } = Dimensions.get('window');
 const defaultImage = require('../../../assets/photo/pac1.jpg');
-const backend_url="http://192.168.141.31:3000";
+const backend_url="http://10.16.54.141:3000";
 
 const RoomCard = ({ room, onPress }) => {
   // Format location coordinates to a readable string
@@ -87,11 +88,6 @@ const RoomScreen = ({ navigation }) => {
     { label: '25km', value: 25 },
     { label: '50km', value: 50 }
   ];
-
-  useEffect(() => {
-    fetchRooms();
-    getCurrentUserLocation();
-  }, []);
 
   const getCurrentUserLocation = async () => {
     try {
@@ -170,6 +166,13 @@ const RoomScreen = ({ navigation }) => {
         return a.distance - b.distance;
       })
     : filteredRooms;
+
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchRooms();
+      getCurrentUserLocation();
+    }, [])
+  );
 
   if (loading) {
     return (

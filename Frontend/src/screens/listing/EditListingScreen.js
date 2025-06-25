@@ -17,6 +17,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { uploadImage, updateRoom, updateVehicle, getRoomById, getVehicleById } from '../../utils/api';
+import MapComponent from '../../components/MapComponent';
+import { getCurrentLocation } from '../../utils/helpers';
 
 const EditListingScreen = ({ route, navigation }) => {
   const { id, type } = route.params;
@@ -24,6 +26,7 @@ const EditListingScreen = ({ route, navigation }) => {
   const [saving, setSaving] = useState(false);
   const [images, setImages] = useState([]);
   const [existingImages, setExistingImages] = useState([]);
+  const [deletedImages, setDeletedImages] = useState([]);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -60,12 +63,17 @@ const EditListingScreen = ({ route, navigation }) => {
     fetchListingData();
   }, []);
 
+  useEffect(() => {
+    console.log('Form data updated:', formData);
+  }, [formData]);
+
   const fetchListingData = async () => {
     try {
       setLoading(true);
       let data;
       if (type === 'room') {
         data = await getRoomById(id);
+        console.log('Fetched room data:', data);
         setRoomData({
           type: data.type || '',
           rating: data.rating?.toString() || '',
@@ -74,6 +82,7 @@ const EditListingScreen = ({ route, navigation }) => {
         });
       } else {
         data = await getVehicleById(id);
+        console.log('Fetched vehicle data:', data);
         setVehicleData({
           vehicleType: data.vehicleType || 'Car',
           brand: data.brand || '',
@@ -87,6 +96,9 @@ const EditListingScreen = ({ route, navigation }) => {
         });
       }
 
+      console.log('Location data:', data.location);
+      console.log('Coordinates:', data.location?.coordinates);
+
       // Set common form data
       setFormData({
         title: data.title || '',
@@ -94,7 +106,10 @@ const EditListingScreen = ({ route, navigation }) => {
         address: data.address || '',
         location: {
           type: 'Point',
-          coordinates: data.location?.coordinates || ['', ''],
+          coordinates: data.location?.coordinates ? [
+            data.location.coordinates[0]?.toString() || '',
+            data.location.coordinates[1]?.toString() || ''
+          ] : ['', ''],
         },
         amenities: Array.isArray(data.amenities) ? data.amenities.join(', ') : '',
         status: data.status || 'draft',
@@ -105,6 +120,7 @@ const EditListingScreen = ({ route, navigation }) => {
       if (Array.isArray(data.images)) {
         setExistingImages(data.images);
       }
+      setDeletedImages([]); // Reset deleted images
 
     } catch (error) {
       Alert.alert('Error', error.message || 'Failed to fetch listing data');
@@ -116,10 +132,40 @@ const EditListingScreen = ({ route, navigation }) => {
 
   const handleImagePick = async () => {
     try {
+      // Show cropping options
+      Alert.alert(
+        'Select Image',
+        'Choose how you want to crop your image:',
+        [
+          {
+            text: 'Use Original',
+            onPress: () => pickImage(false, null)
+          },
+          {
+            text: 'Square Crop',
+            onPress: () => pickImage(true, [1, 1])
+          },
+          {
+            text: 'Free Crop',
+            onPress: () => pickImage(true, null)
+          },
+          {
+            text: 'Cancel',
+            style: 'cancel'
+          }
+        ]
+      );
+    } catch (error) {
+      Alert.alert('Error', 'Failed to pick image');
+    }
+  };
+
+  const pickImage = async (allowsEditing, aspect) => {
+    try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [4, 3],
+        allowsEditing: allowsEditing,
+        aspect: aspect,
         quality: 0.8,
       });
 
@@ -128,6 +174,58 @@ const EditListingScreen = ({ route, navigation }) => {
       }
     } catch (error) {
       Alert.alert('Error', 'Failed to pick image');
+    }
+  };
+
+  const handleDeleteExistingImage = (index) => {
+    Alert.alert(
+      'Delete Image',
+      'Are you sure you want to delete this image?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            const imageToDelete = existingImages[index];
+            setExistingImages(existingImages.filter((_, i) => i !== index));
+            setDeletedImages([...deletedImages, imageToDelete]);
+          }
+        }
+      ]
+    );
+  };
+
+  const handleDeleteNewImage = (index) => {
+    Alert.alert(
+      'Delete Image',
+      'Are you sure you want to delete this image?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            setImages(images.filter((_, i) => i !== index));
+          }
+        }
+      ]
+    );
+  };
+
+  const handleGetCurrentLocation = async () => {
+    try {
+      const location = await getCurrentLocation();
+      setFormData({
+        ...formData,
+        location: {
+          ...formData.location,
+          coordinates: [location.longitude.toString(), location.latitude.toString()],
+        },
+      });
+      Alert.alert('Success', 'Current location set successfully!');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to get current location. Please check location permissions.');
     }
   };
 
@@ -142,7 +240,9 @@ const EditListingScreen = ({ route, navigation }) => {
         throw new Error('Failed to upload images');
       }
     }
-    return [...existingImages, ...uploadedUrls];
+    // Return existing images minus deleted ones, plus new uploaded images
+    const remainingExistingImages = existingImages.filter(img => !deletedImages.includes(img));
+    return [...remainingExistingImages, ...uploadedUrls];
   };
 
   const handleSubmit = async () => {
@@ -417,7 +517,7 @@ const EditListingScreen = ({ route, navigation }) => {
 
           <View style={styles.formGroup}>
             <Text style={styles.label}>Location (Longitude, Latitude) *</Text>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
+            <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
               <TextInput
                 style={[styles.input, { flex: 1 }]}
                 value={formData.location.coordinates[0]}
@@ -431,6 +531,63 @@ const EditListingScreen = ({ route, navigation }) => {
                 onChangeText={value => setFormData({ ...formData, location: { ...formData.location, coordinates: [formData.location.coordinates[0], value] } })}
                 placeholder="Latitude"
                 keyboardType="numeric"
+              />
+              <TouchableOpacity 
+                style={styles.locationButton}
+                onPress={handleGetCurrentLocation}
+              >
+                <Ionicons name="locate" size={20} color="#007AFF" />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Map for Location Selection */}
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Select Location on Map</Text>
+            <View style={styles.mapContainer}>
+              <MapComponent
+                initialRegion={{
+                  latitude: parseFloat(formData.location.coordinates[1]) || 37.78825,
+                  longitude: parseFloat(formData.location.coordinates[0]) || -122.4324,
+                  latitudeDelta: 0.01,
+                  longitudeDelta: 0.01,
+                }}
+                showUserLocation={true}
+                showMapTypeSwitch={true}
+                showSearch={true}
+                showDirections={false}
+                markers={[
+                  {
+                    coordinate: {
+                      latitude: parseFloat(formData.location.coordinates[1]) || 37.78825,
+                      longitude: parseFloat(formData.location.coordinates[0]) || -122.4324,
+                    },
+                    title: formData.title || 'Selected Location',
+                    description: formData.address || 'Tap to select location',
+                    pinColor: 'red',
+                    draggable: true,
+                  },
+                ]}
+                onMarkerDragEnd={(coordinate) => {
+                  setFormData({
+                    ...formData,
+                    location: {
+                      ...formData.location,
+                      coordinates: [coordinate.longitude.toString(), coordinate.latitude.toString()],
+                    },
+                  });
+                }}
+                onMapPress={(event) => {
+                  const { latitude, longitude } = event.nativeEvent.coordinate;
+                  setFormData({
+                    ...formData,
+                    location: {
+                      ...formData.location,
+                      coordinates: [longitude.toString(), latitude.toString()],
+                    },
+                  });
+                }}
+                style={styles.map}
               />
             </View>
           </View>
@@ -469,15 +626,33 @@ const EditListingScreen = ({ route, navigation }) => {
 
           <View style={styles.formGroup}>
             <Text style={styles.label}>Images</Text>
+            <Text style={styles.cropInfoText}>
+              💡 Tip: Choose "Use Original" to avoid cropping, or "Square Crop" for consistent listing images
+            </Text>
             <View style={styles.imageContainer}>
               {existingImages.map((uri, index) => (
                 <View key={index} style={styles.imageWrapper}>
-                  <Image source={{ uri }} style={styles.image} />
+                  <Image 
+                    source={{ uri: uri.startsWith('http') ? uri : `http://192.168.141.31:3000/${uri}` }} 
+                    style={styles.image} 
+                  />
+                  <TouchableOpacity 
+                    style={styles.deleteImageButton}
+                    onPress={() => handleDeleteExistingImage(index)}
+                  >
+                    <Ionicons name="close-circle" size={20} color="#fff" />
+                  </TouchableOpacity>
                 </View>
               ))}
               {images.map((uri, index) => (
                 <View key={`new-${index}`} style={styles.imageWrapper}>
                   <Image source={{ uri }} style={styles.image} />
+                  <TouchableOpacity 
+                    style={styles.deleteImageButton}
+                    onPress={() => handleDeleteNewImage(index)}
+                  >
+                    <Ionicons name="close-circle" size={20} color="#fff" />
+                  </TouchableOpacity>
                 </View>
               ))}
               <TouchableOpacity 
@@ -565,6 +740,7 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 8,
     overflow: 'hidden',
+    position: 'relative',
   },
   image: {
     width: '100%',
@@ -579,6 +755,18 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  deleteImageButton: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
   },
   submitButton: {
     backgroundColor: '#007AFF',
@@ -603,6 +791,26 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
+    color: '#666',
+  },
+  mapContainer: {
+    height: 200,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  map: {
+    flex: 1,
+  },
+  locationButton: {
+    padding: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+  },
+  cropInfoText: {
+    marginBottom: 8,
     color: '#666',
   },
 });

@@ -396,18 +396,28 @@ export const getAllVehicles = async () => {
     // Transform the data to match our frontend needs
     return vehicles.map(vehicle => ({
       id: vehicle._id,
+      _id: vehicle._id, // Keep original _id for compatibility
       title: vehicle.title || '',
       description: vehicle.description || '',
-      type: vehicle.type || 'Standard',
-      // Convert location object to a string representation
-      location: vehicle.location?.coordinates ? 
-        `${vehicle.location.coordinates[1]}, ${vehicle.location.coordinates[0]}` : 
-        'Location not specified',
+      type: vehicle.vehicleType || vehicle.type || 'Standard',
+      // Preserve the original location object structure
+      location: vehicle.location || null,
       address: vehicle.address || '',
       price: vehicle.pricePerDay || 0,
+      pricePerDay: vehicle.pricePerDay || 0,
       rating: vehicle.rating || 0,
       images: vehicle.images || [],
-      features: vehicle.features || [],
+      features: vehicle.amenities || [],
+      amenities: vehicle.amenities || [],
+      vehicleType: vehicle.vehicleType || 'Car',
+      brand: vehicle.brand || '',
+      model: vehicle.model || '',
+      registrationNumber: vehicle.registrationNumber || '',
+      fuelType: vehicle.fuelType || 'Petrol',
+      transmission: vehicle.transmission || 'Manual',
+      capacity: vehicle.capacity || 1,
+      available: vehicle.available ?? true,
+      status: vehicle.status || 'draft',
       owner: vehicle.owner ? {
         id: vehicle.owner._id,
         name: vehicle.owner.name || '',

@@ -104,8 +104,8 @@ const getAddress = async (lat, lon) => {
     // If we couldn't extract meaningful parts from address object, use display_name
     if (meaningfulParts.length === 0) {
       // Take first 3 meaningful parts from display_name
-      for (let i = 0; i < Math.min(3, addressParts.length); i++) {
-        const part = addressParts[i]?.trim();
+    for (let i = 0; i < Math.min(3, addressParts.length); i++) {
+      const part = addressParts[i]?.trim();
         if (part && !part.match(/^\d+$/) && part.length > 2) { // Skip if it's just a number or too short
           meaningfulParts.push(part);
         }
@@ -219,7 +219,7 @@ const ProfileScreen = ({ navigation, route }) => {
         try {
           const [longitude, latitude] = userData.location.coordinates; // GeoJSON format: [lng, lat]
           const address = await getAddress(latitude, longitude);
-          setLocationName(address);
+        setLocationName(address);
         } catch (error) {
           console.error('Error fetching location name:', error);
           setLocationName('Location unavailable');
@@ -761,13 +761,13 @@ const ProfileScreen = ({ navigation, route }) => {
                   style={styles.locationContainer}
                   onPress={() => setShowCoordinates(!showCoordinates)}
                 >
-                  <Ionicons name="location" size={14} color="#666" />
+                  <Ionicons name="location" size={14} color="#666" /> 
                   {locationLoading ? (
                     <Text style={styles.locationLoading}>Loading location...</Text>
                   ) : showCoordinates ? (
                     <Text style={styles.userLocation}>
                       {userData.location.coordinates[1].toFixed(6)}, {userData.location.coordinates[0].toFixed(6)}
-                    </Text>
+                </Text>
                   ) : locationName ? (
                     <Text style={styles.userLocation}>{locationName}</Text>
                   ) : (
