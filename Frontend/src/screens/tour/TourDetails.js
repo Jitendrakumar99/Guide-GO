@@ -116,6 +116,11 @@ const TourDetails = ({ route, navigation }) => {
             <Text style={styles.highlightText}>• Lunch included</Text>
           </View>
 
+          {/* Description Section */}
+          <Text style={styles.sectionTitle}>Description</Text>
+          <View style={styles.highlightsContainer}>
+            
+          </View>
           {/* Gallery */}
           <Text style={styles.sectionTitle}>Gallery</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.gallery}>
@@ -169,7 +174,7 @@ const TourDetails = ({ route, navigation }) => {
       </ScrollView>
 
       {/* Bottom Bar */}
-      <View style={styles.bottomBar}>
+      {/* <View style={styles.bottomBar}>
         <View style={styles.priceContainer}>
           <Text style={styles.priceLabel}>Price per person</Text>
           <Text style={styles.price}>₹{tour.price || '1500'}<Text style={styles.perDay}>/person</Text></Text>
@@ -177,7 +182,7 @@ const TourDetails = ({ route, navigation }) => {
         <TouchableOpacity style={styles.bookButton} onPress={handleBookNow}>
           <Text style={styles.bookButtonText}>Book Now</Text>
         </TouchableOpacity>
-      </View>
+      </View> */}
     </SafeAreaView>
   );
 };

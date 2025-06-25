@@ -22,7 +22,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import MapComponent from '../../components/MapComponent';
 const { width } = Dimensions.get('window');
 const defaultImage = require('../../../assets/photo/pac1.jpg');
-const backend_url = "http://10.16.54.141:3000"||process.env.backend_url;
+const backend_url = "http://192.168.137.1:3000"||process.env.backend_url;
 
 const RoomDetails = ({ route, navigation }) => {
   const { room } = route.params;
