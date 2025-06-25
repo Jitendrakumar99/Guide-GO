@@ -26,6 +26,8 @@ import SettingsScreen from './src/screens/profile/SettingsScreen';
 import PaymentMethodsScreen from './src/screens/profile/PaymentMethodsScreen';
 import NotificationScreen from './src/screens/profile/NotificationsScreen';
 import ForgotPasswordScreen from "./src/screens/auth/ForgotPasswordScreen";
+import FloatingChatButton from './src/components/FloatingChatButton';
+import ChatModal from './src/components/ChatModal';
 
 // import Main from "./component/main";
 // import Home from "./component/Home";
@@ -80,6 +82,7 @@ function PlaceholderScreen() {
 export default function App() {
   const [hasSeenOnboarding, setHasSeenOnboarding] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [chatVisible, setChatVisible] = useState(false);
 
   const handleOnboardingComplete = () => {
     setHasSeenOnboarding(true);
@@ -129,6 +132,14 @@ export default function App() {
           )}
         </Stack.Navigator>
       </NavigationContainer>
+      {isAuthenticated && (
+        <>
+          <FloatingChatButton onPress={() => setChatVisible(true)} />
+          <ChatModal visible={chatVisible} onClose={() => setChatVisible(false)}>
+            <Text style={{textAlign:'center',marginTop:40,fontSize:18,fontWeight:'bold'}}>AI Booking Chat Coming Soon!</Text>
+          </ChatModal>
+        </>
+      )}
     </SafeAreaProvider>
   );
 }

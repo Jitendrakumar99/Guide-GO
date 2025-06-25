@@ -5,7 +5,7 @@ import MapViewDirections from 'react-native-maps-directions';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import { Ionicons } from '@expo/vector-icons';
 
-const GOOGLE_MAPS_APIKEY = process.env.GOOGLE_MAPS_API_KEY || 'YOUR_API_KEY'; // <-- Set your key here
+const GOOGLE_MAPS_APIKEY = process.env.GOOGLE_MAPS_API_KEY || 'AIzaSyBHMVcMC8vZS2h5p9nSIDvZmc6q0Va4xhA'; // <-- Set your key here
 
 const MapComponent = ({
   initialRegion = {
@@ -49,7 +49,7 @@ const MapComponent = ({
 
   return (
     <View style={[styles.container, style]}>
-      {showSearch && GOOGLE_MAPS_APIKEY && GOOGLE_MAPS_APIKEY !== 'YOUR_API_KEY' && (
+      {showSearch && GOOGLE_MAPS_APIKEY && GOOGLE_MAPS_APIKEY !== 'AIzaSyBHMVcMC8vZS2h5p9nSIDvZmc6q0Va4xhA' && (
         <GooglePlacesAutocomplete
           placeholder="Search"
           fetchDetails
@@ -121,7 +121,7 @@ const MapComponent = ({
         })}
         {/* Search marker */}
         {searchLocation && (
-          <Marker
+        <Marker
             coordinate={searchLocation}
             title="Searched Location"
             pinColor="blue"

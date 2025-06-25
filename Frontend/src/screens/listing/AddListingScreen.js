@@ -527,7 +527,7 @@ const AddListingScreen = ({ navigation }) => {
               >
                 <Ionicons name="add" size={24} color="#007AFF" />
                 <Text style={styles.addImageText}>Add Image</Text>
-              </TouchableOpacity>
+            </TouchableOpacity>
             </View>
             {images.length > 0 && (
               <Text style={styles.imageCountText}>
