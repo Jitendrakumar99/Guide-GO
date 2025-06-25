@@ -221,39 +221,43 @@ export default function OnboardingScreen({ navigation, route }) {
     }
   }, [currentIndex]);
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
-      <FlatList
-        data={onboardingData}
-        renderItem={renderItem}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        pagingEnabled
-        bounces={false}
-        keyExtractor={(item) => item.id}
-        onViewableItemsChanged={viewableItemsChanged}
-        viewabilityConfig={viewConfig}
-        ref={slidesRef}
-        scrollEventThrottle={32}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-          { useNativeDriver: false }
-        )}
-      />
+  const currentBgColor = onboardingData[currentIndex]?.bgColor || '#fff';
 
-      <View style={styles.paginationContainer}>
-        {onboardingData.map((_, index) => (
-          <View
-            key={index}
-            style={[
-              styles.dot,
-              index === currentIndex ? styles.activeDot : styles.inactiveDot,
-            ]}
-          />
-        ))}
-      </View>
-    </SafeAreaView>
+  return (
+    <View style={{ flex: 1, backgroundColor: currentBgColor }}>
+      <StatusBar barStyle="dark-content" backgroundColor={currentBgColor} />
+      <SafeAreaView style={styles.container}>
+        <FlatList
+          data={onboardingData}
+          renderItem={renderItem}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          pagingEnabled
+          bounces={false}
+          keyExtractor={(item) => item.id}
+          onViewableItemsChanged={viewableItemsChanged}
+          viewabilityConfig={viewConfig}
+          ref={slidesRef}
+          scrollEventThrottle={32}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+            { useNativeDriver: false }
+          )}
+        />
+
+        <View style={styles.paginationContainer}>
+          {onboardingData.map((_, index) => (
+            <View
+              key={index}
+              style={[
+                styles.dot,
+                index === currentIndex ? styles.activeDot : styles.inactiveDot,
+              ]}
+            />
+          ))}
+        </View>
+      </SafeAreaView>
+    </View>
   );
 }
 
@@ -306,7 +310,7 @@ const styles = StyleSheet.create({
   },
   skipButton: {
     position: 'absolute',
-    top: 50,
+    top: 25,
     right: 20,
     zIndex: 2,
     padding: 10,
@@ -320,7 +324,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     // justifyContent: 'center',
-    marginTop:35,
+    // marginTop:35,
 
     // paddingHorizontal: 20,
   },

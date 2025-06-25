@@ -60,8 +60,38 @@ const EditListingScreen = ({ route, navigation }) => {
   });
 
   useEffect(() => {
+    // Reset all state to initial values
+    setFormData({
+      title: '',
+      description: '',
+      address: '',
+      location: { type: 'Point', coordinates: ['', ''] },
+      amenities: '',
+      status: 'draft',
+      available: true,
+    });
+    setRoomData({
+      type: '',
+      rating: '',
+      capacity: '',
+      pricePerNight: '',
+    });
+    setVehicleData({
+      vehicleType: 'Car',
+      brand: '',
+      model: '',
+      registrationNumber: '',
+      fuelType: 'Petrol',
+      transmission: 'Manual',
+      rating: '',
+      capacity: '',
+      pricePerDay: '',
+    });
+    setExistingImages([]);
+    setImages([]);
+    setDeletedImages([]);
     fetchListingData();
-  }, []);
+  }, [id, type]);
 
   useEffect(() => {
     console.log('Form data updated:', formData);
