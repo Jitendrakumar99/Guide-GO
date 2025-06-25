@@ -25,7 +25,7 @@ import {
 
 const { width } = Dimensions.get('window');
 const defaultImage = require('../../../assets/photo/pac1.jpg');
-const backend_url="http://10.16.54.141:3000";
+const backend_url="http://192.168.141.31:3000";
 
 const RoomCard = ({ room, onPress }) => {
   // Format location coordinates to a readable string

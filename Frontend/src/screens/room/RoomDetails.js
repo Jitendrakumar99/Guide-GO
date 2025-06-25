@@ -22,12 +22,13 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import MapComponent from '../../components/MapComponent';
 const { width } = Dimensions.get('window');
 const defaultImage = require('../../../assets/photo/pac1.jpg');
-const backend_url = "http://10.16.54.141:3000"||process.env.backend_url;
+const backend_url = "http://192.168.141.31:3000"||process.env.backend_url;
 
 const RoomDetails = ({ route, navigation }) => {
   const { room } = route.params;
   // Ensure room object has all required properties with defaults
   const safeRoom = {
+    ...room,
     _id: room.id || room._id || '',
     title: room.title || 'Room Details',
     description: room.description || 'No description available',
@@ -48,7 +49,6 @@ const RoomDetails = ({ route, navigation }) => {
       name: room.owner.name || '',
       profilePic: room.owner.profilePic || null
     } : null,
-    ...room
   };
 
   const [isOwner, setIsOwner] = useState(false);

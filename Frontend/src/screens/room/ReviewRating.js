@@ -127,10 +127,11 @@ const ReviewRating = ({ itemId, itemType }) => {
   const stats = calculateRatingStats();
   
   const getFilteredReviews = () => {
-    if (filter === 'all') return reviews;
-    if (filter === 'positive') return reviews.filter(review => review.rating >= 3);
-    if (filter === 'negative') return reviews.filter(review => review.rating <= 2);
-    return reviews;
+    const safeReviews = Array.isArray(reviews) ? reviews : [];
+    if (filter === 'all') return safeReviews;
+    if (filter === 'positive') return safeReviews.filter(review => review.rating >= 3);
+    if (filter === 'negative') return safeReviews.filter(review => review.rating <= 2);
+    return safeReviews;
   };
 
   const filteredReviews = getFilteredReviews();
