@@ -9,14 +9,23 @@ import {
   Image,
   Dimensions,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import StatusBar from '../../components/StatusBar';
 import { getAllRooms } from '../../utils/api';
+import { 
+  getCurrentLocation, 
+  sortByDistance, 
+  filterByDistance,
+  formatDistance,
+  calculateDistanceFromCoordinates
+} from '../../utils/helpers';
 
 const { width } = Dimensions.get('window');
 const defaultImage = require('../../../assets/photo/pac1.jpg');
 const backend_url="http://192.168.141.31:3000";
+
 const RoomCard = ({ room, onPress }) => {
   // Format location coordinates to a readable string
   const locationString = room.location?.coordinates ? 
@@ -45,6 +54,9 @@ const RoomCard = ({ room, onPress }) => {
         <View style={styles.locationContainer}>
           <Ionicons name="location" size={16} color="#007AFF" />
           <Text style={styles.locationText}>{room.address || locationString}</Text>
+          {room.distanceFormatted && (
+            <Text style={styles.distanceText}> • {room.distanceFormatted}</Text>
+          )}
         </View>
         <View style={styles.ownerContainer}>
           <Ionicons name="person" size={16} color="#007AFF" />
@@ -62,12 +74,37 @@ const RoomScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [rooms, setRooms] = useState([]);
+  const [currentLocation, setCurrentLocation] = useState(null);
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [distanceFilter, setDistanceFilter] = useState(null);
+  const [sortByDistance, setSortByDistance] = useState(false);
 
   const filters = ['All', 'Standard', 'Deluxe', 'Suite'];
+  const distanceFilters = [
+    { label: 'All', value: null },
+    { label: '5km', value: 5 },
+    { label: '10km', value: 10 },
+    { label: '25km', value: 25 },
+    { label: '50km', value: 50 }
+  ];
 
   useEffect(() => {
     fetchRooms();
+    getCurrentUserLocation();
   }, []);
+
+  const getCurrentUserLocation = async () => {
+    try {
+      setLocationLoading(true);
+      const location = await getCurrentLocation();
+      setCurrentLocation([location.longitude, location.latitude]); // GeoJSON format
+    } catch (error) {
+      console.log('Location not available:', error.message);
+      // Don't show error alert for location, just log it
+    } finally {
+      setLocationLoading(false);
+    }
+  };
 
   const fetchRooms = async () => {
     try {
@@ -83,12 +120,56 @@ const RoomScreen = ({ navigation }) => {
     }
   };
 
+  // Process rooms with distance when current location changes
+  useEffect(() => {
+    if (currentLocation && rooms.length > 0) {
+      const roomsWithDistance = processRoomsWithDistance(rooms);
+      setRooms(roomsWithDistance);
+    }
+  }, [currentLocation]);
+
+  const processRoomsWithDistance = (roomsData) => {
+    if (!currentLocation) return roomsData;
+
+    return roomsData.map(room => {
+      if (room.location?.coordinates) {
+        const distance = calculateDistanceFromCoordinates(
+          currentLocation, 
+          room.location.coordinates
+        );
+        return {
+          ...room,
+          distance,
+          distanceFormatted: distance ? formatDistance(distance) : null
+        };
+      }
+      return room;
+    });
+  };
+
   const filteredRooms = rooms.filter(room => {
     const matchesSearch = room.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          room.location?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFilter = selectedFilter === 'all' || room.type?.toLowerCase() === selectedFilter.toLowerCase();
-    return matchesSearch && matchesFilter;
+    
+    // Apply distance filter if set
+    let matchesDistance = true;
+    if (distanceFilter && room.distance !== undefined) {
+      matchesDistance = room.distance <= distanceFilter;
+    }
+    
+    return matchesSearch && matchesFilter && matchesDistance;
   });
+
+  // Sort by distance if enabled
+  const sortedRooms = sortByDistance 
+    ? [...filteredRooms].sort((a, b) => {
+        if (a.distance === undefined && b.distance === undefined) return 0;
+        if (a.distance === undefined) return 1;
+        if (b.distance === undefined) return -1;
+        return a.distance - b.distance;
+      })
+    : filteredRooms;
 
   if (loading) {
     return (
@@ -179,11 +260,67 @@ const RoomScreen = ({ navigation }) => {
         </ScrollView>
       </View>
 
+      {/* Distance Filter Section */}
+      <View style={styles.distanceFilterWrapper}>
+        <View style={styles.distanceFilterHeader}>
+          <Text style={styles.distanceFilterTitle}>Distance</Text>
+          <TouchableOpacity
+            style={[
+              styles.sortButton,
+              sortByDistance && styles.sortButtonActive
+            ]}
+            onPress={() => setSortByDistance(!sortByDistance)}
+            disabled={!currentLocation}
+          >
+            <Ionicons 
+              name="navigate" 
+              size={16} 
+              color={sortByDistance ? "#fff" : "#007AFF"} 
+            />
+            <Text style={[
+              styles.sortButtonText,
+              sortByDistance && styles.sortButtonTextActive
+            ]}>
+              {sortByDistance ? 'Sorted' : 'Sort by Distance'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.distanceFilterContainer}
+        >
+          {distanceFilters.map((filter, index) => (
+            <TouchableOpacity
+              key={index}
+              style={[
+                styles.distanceFilterTab,
+                distanceFilter === filter.value && styles.distanceFilterTabActive
+              ]}
+              onPress={() => setDistanceFilter(filter.value)}
+            >
+              <Text style={[
+                styles.distanceFilterText,
+                distanceFilter === filter.value && styles.distanceFilterTextActive
+              ]}>
+                {filter.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+        {locationLoading && (
+          <View style={styles.locationLoadingContainer}>
+            <ActivityIndicator size="small" color="#007AFF" />
+            <Text style={styles.locationLoadingText}>Getting your location...</Text>
+          </View>
+        )}
+      </View>
+
       {/* Rooms List */}
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.roomsContainer}>
-          {filteredRooms.length > 0 ? (
-            filteredRooms.map(room => (
+          {sortedRooms.length > 0 ? (
+            sortedRooms.map(room => (
               <RoomCard
                 key={room._id || room.id}
                 room={room}
@@ -428,6 +565,87 @@ const styles = StyleSheet.create({
   ownerText: {
     marginLeft: 4,
     fontSize: 14,
+    color: '#666',
+  },
+  distanceText: {
+    marginLeft: 8,
+    color: '#666',
+  },
+  distanceFilterWrapper: {
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+    paddingVertical: 10,
+  },
+  distanceFilterHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 15,
+    paddingBottom: 10,
+  },
+  distanceFilterTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1a1a1a',
+  },
+  sortButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f8f8',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+  sortButtonActive: {
+    backgroundColor: '#007AFF',
+  },
+  sortButtonText: {
+    marginLeft: 5,
+    color: '#007AFF',
+    fontWeight: '500',
+  },
+  sortButtonTextActive: {
+    color: '#fff',
+  },
+  distanceFilterContainer: {
+    paddingHorizontal: 15,
+    paddingVertical: 5,
+  },
+  distanceFilterTab: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 25,
+    marginRight: 10,
+    backgroundColor: '#f8f8f8',
+    borderWidth: 1,
+    borderColor: '#eee',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  distanceFilterTabActive: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  distanceFilterText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#666',
+  },
+  distanceFilterTextActive: {
+    color: '#fff',
+  },
+  locationLoadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 10,
+  },
+  locationLoadingText: {
+    marginLeft: 5,
     color: '#666',
   },
 });

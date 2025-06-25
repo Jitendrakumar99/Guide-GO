@@ -2,7 +2,7 @@
 // const API_BASE_URL = 'http://localhost:3000';
 
 // Use this for mobile development (replace with your computer's IP address)
-const API_BASE_URL = 'http://192.168.141.31:3000'; // Updated to match device network
+const API_BASE_URL = 'http://10.16.54.141:3000'; // Updated to match device network
 
 // You can also use Platform.select to automatically choose the right URL
 // import { Platform } from 'react-native';
@@ -1213,4 +1213,64 @@ export const submitRating = async ({ itemId, itemType, ...data }) => {
   } catch (error) {
     return handleError(error);
   }
+};
+
+export const requestOtp = async (email) => {
+  const response = await fetch(`${API_BASE_URL}/auth/request-otp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email })
+  });
+  if (!response.ok) throw new Error((await response.json()).message);
+  return response.json();
+};
+
+export const verifyOtp = async (email, otp) => {
+  const response = await fetch(`${API_BASE_URL}/auth/verify-otp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, otp })
+  });
+  if (!response.ok) throw new Error((await response.json()).message);
+  return response.json();
+};
+
+export const completeSignup = async (data) => {
+  const response = await fetch(`${API_BASE_URL}/auth/complete-signup`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  if (!response.ok) throw new Error((await response.json()).message);
+  return response.json();
+};
+
+export const requestPasswordResetOtp = async (email) => {
+  const response = await fetch(`${API_BASE_URL}/auth/request-password-reset-otp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email })
+  });
+  if (!response.ok) throw new Error((await response.json()).message);
+  return response.json();
+};
+
+export const verifyPasswordResetOtp = async (email, otp) => {
+  const response = await fetch(`${API_BASE_URL}/auth/verify-password-reset-otp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, otp })
+  });
+  if (!response.ok) throw new Error((await response.json()).message);
+  return response.json();
+};
+
+export const resetPassword = async (email, password) => {
+  const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password })
+  });
+  if (!response.ok) throw new Error((await response.json()).message);
+  return response.json();
 }; 

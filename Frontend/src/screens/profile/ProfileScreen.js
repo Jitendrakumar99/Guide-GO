@@ -44,7 +44,7 @@ const getAddress = async (lat, lon) => {
 
     console.log('Fetching address for coordinates:', { latitude, longitude });
     const res = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10`,
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=16&addressdetails=1`,
       {
         headers: {
           'User-Agent': 'YourAppName/1.0',
@@ -71,24 +71,48 @@ const getAddress = async (lat, lon) => {
       return 'Location unavailable';
     }
 
-    // Extract city name from the address components
+    // Try to extract a more meaningful address
     const addressParts = data.display_name.split(',');
     if (!addressParts || addressParts.length === 0) {
       return 'Location unavailable';
     }
 
-    // Try to find the city name in the address parts
-    // Usually it's in the first few parts, but we'll check more thoroughly
-    let cityName = '';
-    for (let i = 0; i < Math.min(3, addressParts.length); i++) {
-      const part = addressParts[i]?.trim();
-      if (part && !part.match(/^\d+$/)) { // Skip if it's just a number
-        cityName = part;
-        break;
+    // Extract meaningful parts of the address
+    let meaningfulParts = [];
+    
+    // Look for city, town, or village
+    if (data.address) {
+      if (data.address.city) {
+        meaningfulParts.push(data.address.city);
+      } else if (data.address.town) {
+        meaningfulParts.push(data.address.town);
+      } else if (data.address.village) {
+        meaningfulParts.push(data.address.village);
+      }
+      
+      // Add state/province if available
+      if (data.address.state) {
+        meaningfulParts.push(data.address.state);
+      }
+      
+      // Add country if available
+      if (data.address.country) {
+        meaningfulParts.push(data.address.country);
       }
     }
 
-    return cityName || 'Location unavailable';
+    // If we couldn't extract meaningful parts from address object, use display_name
+    if (meaningfulParts.length === 0) {
+      // Take first 3 meaningful parts from display_name
+      for (let i = 0; i < Math.min(3, addressParts.length); i++) {
+        const part = addressParts[i]?.trim();
+        if (part && !part.match(/^\d+$/) && part.length > 2) { // Skip if it's just a number or too short
+          meaningfulParts.push(part);
+        }
+      }
+    }
+
+    return meaningfulParts.length > 0 ? meaningfulParts.join(', ') : 'Location unavailable';
   } catch (error) {
     console.error('Error fetching address:', error);
     return 'Location unavailable';
@@ -158,6 +182,8 @@ const ProfileScreen = ({ navigation, route }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [locationName, setLocationName] = useState('');
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [showCoordinates, setShowCoordinates] = useState(false);
   const [activeTab, setActiveTab] = useState('listings');
   const [myBookings, setMyBookings] = useState([]);
   const [userBookings, setUserBookings] = useState([]);
@@ -189,11 +215,20 @@ const ProfileScreen = ({ navigation, route }) => {
   useEffect(() => {
     const fetchLocationName = async () => {
       if (userData?.location?.coordinates) {
-        const [lat, lon] = userData.location.coordinates;
-        const address = await getAddress(lat, lon);
-        setLocationName(address);
+        setLocationLoading(true);
+        try {
+          const [longitude, latitude] = userData.location.coordinates; // GeoJSON format: [lng, lat]
+          const address = await getAddress(latitude, longitude);
+          setLocationName(address);
+        } catch (error) {
+          console.error('Error fetching location name:', error);
+          setLocationName('Location unavailable');
+        } finally {
+          setLocationLoading(false);
+        }
       } else {
         setLocationName('');
+        setLocationLoading(false);
       }
     };
 
@@ -721,11 +756,30 @@ const ProfileScreen = ({ navigation, route }) => {
               <Text style={styles.userEmail}>{userData?.email || 'No email added'}</Text>
               <Text style={styles.userPhone}>{userData?.phone || 'No phone added'}</Text>
               <Text style={styles.userAddress}>{userData?.address || 'No address added'}</Text>
-              {locationName && (
-                <Text style={styles.userLocation}>
-                  <Ionicons name="location" size={14} color="#666" /> 
-                  {locationName}
-                </Text>
+              {userData?.location?.coordinates && (
+                <TouchableOpacity 
+                  style={styles.locationContainer}
+                  onPress={() => setShowCoordinates(!showCoordinates)}
+                >
+                  <Ionicons name="location" size={14} color="#666" />
+                  {locationLoading ? (
+                    <Text style={styles.locationLoading}>Loading location...</Text>
+                  ) : showCoordinates ? (
+                    <Text style={styles.userLocation}>
+                      {userData.location.coordinates[1].toFixed(6)}, {userData.location.coordinates[0].toFixed(6)}
+                    </Text>
+                  ) : locationName ? (
+                    <Text style={styles.userLocation}>{locationName}</Text>
+                  ) : (
+                    <Text style={styles.locationError}>Location unavailable</Text>
+                  )}
+                  <Ionicons 
+                    name={showCoordinates ? "map-outline" : "information-circle-outline"} 
+                    size={12} 
+                    color="#007AFF" 
+                    style={styles.locationToggle}
+                  />
+                </TouchableOpacity>
               )}
             </View>
           </View>
@@ -986,7 +1040,7 @@ const styles = StyleSheet.create({
   },
   userLocation: {
     color: '#666',
-    marginTop: 2,
+    marginLeft: 5,
     fontSize: 14,
   },
   memberSinceContainer: {
@@ -1141,6 +1195,26 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 2,
     fontSize: 14,
+  },
+  locationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  locationLoading: {
+    color: '#666',
+    marginLeft: 5,
+    fontSize: 14,
+    fontStyle: 'italic',
+  },
+  locationError: {
+    color: '#FF3B30',
+    marginLeft: 5,
+    fontSize: 14,
+    fontStyle: 'italic',
+  },
+  locationToggle: {
+    marginLeft: 5,
   },
 });
 

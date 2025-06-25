@@ -2,32 +2,38 @@ const User = require('../../models/userModel');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
+// Reusable function for user creation
+exports.createUserDirect = async ({ firstName, lastName, email, phone, password }) => {
+  // Check if user already exists
+  const existingUser = await User.findOne({ email });
+  if (existingUser) {
+    throw new Error('Email already registered');
+  }
+
+  // Hash password
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(password, salt);
+
+  // Create new user
+  const user = new User({
+    firstName,
+    lastName,
+    name: `${firstName} ${lastName}`,
+    email,
+    phone,
+    password: hashedPassword,
+    location: null
+  });
+
+  const savedUser = await user.save();
+  return savedUser;
+};
+
+// The original endpoint for direct signup
 exports.createUser = async (req, res) => {
   try {
     const { email, password, firstName, lastName, phone } = req.body;
-    console.log('Signup endpoint hit');
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ message: 'Email already registered' });
-    }
-
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    // Create new user
-    const user = new User({
-      firstName,
-      lastName,
-      name: `${firstName} ${lastName}`,
-      email,
-      phone,
-      password: hashedPassword,
-      location: req.body.location
-    });
-
-    const savedUser = await user.save();
+    const savedUser = await exports.createUserDirect({ email, password, firstName, lastName, phone });
 
     // Generate JWT token
     const token = jwt.sign(

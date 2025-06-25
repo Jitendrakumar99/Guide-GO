@@ -26,6 +26,7 @@ import UserBookingsScreen from '../screens/booking/UserBookingsScreen';
 import OwnerBookingsScreen from '../screens/booking/OwnerBookingsScreen';
 import Login from '../screens/auth/login';
 import Signup from '../screens/auth/signup';
+import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 
 const Stack = createStackNavigator();
 
@@ -34,6 +35,7 @@ export const AuthStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name="Login" component={Login} />
     <Stack.Screen name="Signup" component={Signup} />
+    <Stack.Screen name="ForgotPasswordScreen" component={ForgotPasswordScreen} options={{ headerShown: true, title: 'Forgot Password' }} />
   </Stack.Navigator>
 );
 

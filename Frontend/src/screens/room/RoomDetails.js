@@ -19,7 +19,7 @@ import { WebView } from 'react-native-webview';
 import ReviewRating  from './ReviewRating';
 import { checkListingOwnership, createBooking, getCurrentUser } from '../../utils/api';
 import DateTimePicker from '@react-native-community/datetimepicker';
-
+import MapComponent from '../../components/MapComponent';
 const { width } = Dimensions.get('window');
 const defaultImage = require('../../../assets/photo/pac1.jpg');
 const backend_url = "http://192.168.141.31:3000"||process.env.backend_url;
@@ -269,6 +269,25 @@ const RoomDetails = ({ route, navigation }) => {
           <Text style={styles.sectionTitle}>Ratings & Reviews</Text>
           <ReviewRating itemId={safeRoom._id} itemType="room" />
 
+
+      <MapComponent
+        initialRegion={{
+          latitude: safeRoom.coordinates.latitude,
+          longitude: safeRoom.coordinates.longitude,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        }}  
+        markers={[
+          {
+            coordinate: safeRoom.coordinates,
+            title: safeRoom.title,
+            description: safeRoom.description,
+          },  
+        ]}
+        style={styles.map}
+      />
+
+      {/* Location Map */}  
           {/* Location Map */}
           <Text style={styles.sectionTitle}>Location</Text>
           <View style={styles.webviewContainer}>

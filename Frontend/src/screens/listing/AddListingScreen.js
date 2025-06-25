@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -17,6 +17,7 @@ import StatusBar from '../../components/StatusBar';
 import * as ImagePicker from 'expo-image-picker';
 import { uploadImage } from '../../utils/api';
 import { createRoom, createVehicle } from '../../utils/api';
+import MapComponent from '../../components/MapComponent';
 
 const AddListingScreen = ({ navigation }) => {
   const [listingType, setListingType] = useState('room'); // 'room' or 'vehicle'
@@ -58,6 +59,21 @@ const AddListingScreen = ({ navigation }) => {
     capacity: '',
     pricePerDay: '',
   });
+
+  const [coordinates, setCoordinates] = useState({
+    latitude: 28.6139,
+    longitude: 77.2090,
+  });
+
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      location: {
+        ...prev.location,
+        coordinates: [coordinates.longitude.toString(), coordinates.latitude.toString()],
+      },
+    }));
+  }, [coordinates]);
 
   const handleImagePick = async () => {
     try {
@@ -474,23 +490,46 @@ const AddListingScreen = ({ navigation }) => {
             />
           </View>
 
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Location (Longitude, Latitude) *</Text>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
+          <View style={{ marginBottom: 20 }}>
+            <Text style={{ fontWeight: 'bold', marginBottom: 5 }}>Select Location</Text>
+            <MapComponent
+              initialRegion={{
+                latitude: coordinates.latitude,
+                longitude: coordinates.longitude,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01,
+              }}
+              markers={[
+                {
+                  coordinate: coordinates,
+                  title: 'Selected Location',
+                },
+              ]}
+              onMapPress={e => {
+                const { latitude, longitude } = e.nativeEvent.coordinate;
+                setCoordinates({ latitude, longitude });
+              }}
+              style={{ height: 250, marginBottom: 10 }}
+            />
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 12 }}>Latitude</Text>
               <TextInput
-                style={[styles.input, { flex: 1 }]}
-                value={formData.location.coordinates[0]}
-                onChangeText={value => setFormData({ ...formData, location: { ...formData.location, coordinates: [value, formData.location.coordinates[1]] } })}
-                placeholder="Longitude"
+                  style={{ borderWidth: 1, borderColor: '#ccc', borderRadius: 5, padding: 8, marginBottom: 5 }}
+                  value={coordinates.latitude.toString()}
+                  onChangeText={val => setCoordinates(c => ({ ...c, latitude: parseFloat(val) || 0 }))}
                 keyboardType="numeric"
               />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 12 }}>Longitude</Text>
               <TextInput
-                style={[styles.input, { flex: 1 }]}
-                value={formData.location.coordinates[1]}
-                onChangeText={value => setFormData({ ...formData, location: { ...formData.location, coordinates: [formData.location.coordinates[0], value] } })}
-                placeholder="Latitude"
+                  style={{ borderWidth: 1, borderColor: '#ccc', borderRadius: 5, padding: 8, marginBottom: 5 }}
+                  value={coordinates.longitude.toString()}
+                  onChangeText={val => setCoordinates(c => ({ ...c, longitude: parseFloat(val) || 0 }))}
                 keyboardType="numeric"
               />
+              </View>
             </View>
           </View>
 

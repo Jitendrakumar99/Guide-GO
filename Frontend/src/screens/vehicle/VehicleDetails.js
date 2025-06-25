@@ -13,6 +13,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import StatusBar from '../../components/StatusBar';
 import { getCurrentUser } from '../../utils/api';
+import ReviewRating from '../room/ReviewRating';
+import MapComponent from '../../components/MapComponent';
 
 const { width } = Dimensions.get('window');
 const backend_url="http://192.168.141.31:3000"||process.env.backend_url;
@@ -126,6 +128,48 @@ const VehicleDetails = ({ route, navigation }) => {
             <Text style={styles.ruleText}>• Security deposit required</Text>
             <Text style={styles.ruleText}>• Minimum age: 21 years</Text>
             <Text style={styles.ruleText}>• Return with full fuel tank</Text>
+          </View>
+
+          {/* Location Map */}
+          {vehicle.location?.coordinates && (
+            <View style={styles.mapSection}>
+              <Text style={styles.sectionTitle}>Location</Text>
+              <View style={styles.mapContainer}>
+                <MapComponent
+                  initialRegion={{
+                    latitude: vehicle.location.coordinates[1],
+                    longitude: vehicle.location.coordinates[0],
+                    latitudeDelta: 0.01,
+                    longitudeDelta: 0.01,
+                  }}
+                  showUserLocation={true}
+                  showMapTypeSwitch={false}
+                  showSearch={false}
+                  showDirections={false}
+                  markers={[
+                    {
+                      coordinate: {
+                        latitude: vehicle.location.coordinates[1],
+                        longitude: vehicle.location.coordinates[0],
+                      },
+                      title: vehicle.title,
+                      description: vehicle.address || 'Vehicle location',
+                      pinColor: 'red',
+                    },
+                  ]}
+                  style={styles.map}
+                />
+              </View>
+            </View>
+          )}
+
+          {/* Reviews Section */}
+          <View style={styles.reviewsSection}>
+            <Text style={styles.sectionTitle}>Reviews & Ratings</Text>
+            <ReviewRating 
+              itemId={vehicle._id || vehicle.id} 
+              itemType="vehicle" 
+            />
           </View>
         </View>
       </ScrollView>
@@ -287,6 +331,20 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  mapSection: {
+    marginBottom: 20,
+  },
+  mapContainer: {
+    height: 200,
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  map: {
+    flex: 1,
+  },
+  reviewsSection: {
+    marginBottom: 20,
   },
 });
 

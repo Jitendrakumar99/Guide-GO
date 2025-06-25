@@ -88,6 +88,13 @@ const Login = ({ navigation, route }) => {
       />
 
             <TouchableOpacity 
+        style={styles.forgotPasswordLink}
+        onPress={() => navigation.navigate('ForgotPasswordScreen')}
+      >
+        <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+      </TouchableOpacity>
+
+            <TouchableOpacity 
               style={styles.loginButton}
               onPress={handleLogin}
               disabled={loading}
@@ -177,6 +184,15 @@ const styles = StyleSheet.create({
     color: '#ff3b30',
     marginBottom: 15,
     textAlign: 'center',
+  },
+  forgotPasswordLink: {
+    alignItems: 'flex-end',
+    marginBottom: 10,
+  },
+  forgotPasswordText: {
+    color: '#007AFF',
+    fontWeight: '600',
+    fontSize: 15,
   },
 });
 

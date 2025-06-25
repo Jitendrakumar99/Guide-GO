@@ -25,6 +25,7 @@ import HelpSupportScreen from './src/screens/profile/HelpSupportScreen';
 import SettingsScreen from './src/screens/profile/SettingsScreen';
 import PaymentMethodsScreen from './src/screens/profile/PaymentMethodsScreen';
 import NotificationScreen from './src/screens/profile/NotificationsScreen';
+import ForgotPasswordScreen from "./src/screens/auth/ForgotPasswordScreen";
 
 // import Main from "./component/main";
 // import Home from "./component/Home";
@@ -114,6 +115,10 @@ export default function App() {
                 name="Signup" 
                 component={SignUp}
                 initialParams={{ setIsAuthenticated }}
+              />
+              <Stack.Screen 
+                name="ForgotPasswordScreen" 
+                component={ForgotPasswordScreen}
               />
             </>
           ) : (

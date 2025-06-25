@@ -6,7 +6,7 @@ const { uploadImage, uploadMultipleImages } = require('../controllers/upload/ima
 const bookingRead = require('../controllers/read/bookingRead');
 const bookingUpdate = require('../controllers/update/bookingUpdate');
 const Booking = require('../models/bookingModel');
-
+ const otpAuthController = require('../controllers/auth/otpAuthController');
 // Import all controllers
 // User Controllers
 const { createUser } = require('../controllers/insert/userInsert');
@@ -119,6 +119,12 @@ router.delete('/admin/vehicles/:id', auth, deleteAdminVehicle);
 
 // ==================== Auth Routes ====================
 router.post('/auth/login', login);  
+router.post('/auth/request-otp', otpAuthController.requestOtp);
+router.post('/auth/verify-otp', otpAuthController.verifyOtp);
+router.post('/auth/complete-signup', otpAuthController.completeSignup);
+router.post('/auth/request-password-reset-otp', otpAuthController.requestPasswordResetOtp);
+router.post('/auth/verify-password-reset-otp', otpAuthController.verifyPasswordResetOtp);
+router.post('/auth/reset-password', otpAuthController.resetPassword);
 
 // ==================== Image Upload Routes ====================
 router.post('/upload/image', auth, upload.single('image'), uploadImage);

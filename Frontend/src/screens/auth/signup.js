@@ -13,15 +13,15 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import StatusBar from '../../components/StatusBar';
-import { signupUser } from '../../utils/api';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { requestOtp, verifyOtp, completeSignup } from '../../utils/api';
 
-const Signup = ({ navigation, route }) => {
-  const { setIsAuthenticated } = route.params;
+const Signup = ({ navigation }) => {
+  const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     email: '',
+    otp: '',
     password: '',
     confirmPassword: '',
   });
@@ -35,57 +35,92 @@ const Signup = ({ navigation, route }) => {
     }));
   };
 
-  const validateForm = () => {
-    if (!formData.firstName || !formData.lastName || !formData.email || !formData.password || !formData.confirmPassword) {
+  const validateStep1 = () => {
+    if (!formData.firstName || !formData.lastName || !formData.email) {
       setError('Please fill in all fields');
       return false;
     }
-
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      return false;
-    }
-
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long');
-      return false;
-    }
-
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
       setError('Please enter a valid email address');
       return false;
     }
-
     return true;
   };
 
-  const handleSignup = async () => {
-    if (!validateForm()) {
-      return;
+  const validateStep2 = () => {
+    if (!formData.otp) {
+      setError('Please enter the OTP sent to your email');
+      return false;
     }
+    return true;
+  };
 
+  const validateStep3 = () => {
+    if (!formData.password || !formData.confirmPassword) {
+      setError('Please enter and confirm your password');
+      return false;
+    }
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      return false;
+    }
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters long');
+      return false;
+    }
+    return true;
+  };
+
+  const handleSendOtp = async () => {
+    if (!validateStep1()) return;
+    setLoading(true);
+    setError(null);
     try {
-      setLoading(true);
-      setError(null);
+      await requestOtp(formData.email);
+      Alert.alert('OTP Sent', 'Check your email for the OTP.');
+      setStep(2);
+    } catch (e) {
+      setError(e.message);
+      Alert.alert('Error', e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      const { confirmPassword, ...signupData } = formData;
-      const response = await signupUser(signupData);
+  const handleVerifyOtp = async () => {
+    if (!validateStep2()) return;
+    setLoading(true);
+    setError(null);
+    try {
+      await verifyOtp(formData.email, formData.otp);
+      Alert.alert('OTP Verified', 'Now set your password.');
+      setStep(3);
+    } catch (e) {
+      setError(e.message);
+      Alert.alert('Error', e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      // Show success alert and navigate to Login after OK
-      Alert.alert(
-        'Signup Successful',
-        'Your account has been created. Please log in.',
-        [
-          {
-            text: 'OK',
-            onPress: () => navigation.navigate('Login')
-          }
-        ]
-      );
-    } catch (error) {
-      setError(error.message || 'Signup failed. Please try again.');
-      Alert.alert('Signup Error', error.message || 'Signup failed. Please try again.');
+  const handleCompleteSignup = async () => {
+    if (!validateStep3()) return;
+    setLoading(true);
+    setError(null);
+    try {
+      await completeSignup({
+        email: formData.email,
+        password: formData.password,
+        firstName: formData.firstName,
+        lastName: formData.lastName
+      });
+      Alert.alert('Signup Complete', 'Your account has been created. Please log in.', [
+        { text: 'OK', onPress: () => navigation.navigate('Login') }
+      ]);
+    } catch (e) {
+      setError(e.message);
+      Alert.alert('Error', e.message);
     } finally {
       setLoading(false);
     }
@@ -107,67 +142,106 @@ const Signup = ({ navigation, route }) => {
           <View style={styles.formContainer}>
             <Text style={styles.title}>Create Account</Text>
             <Text style={styles.subtitle}>Join us and start your journey</Text>
-
             {error && <Text style={styles.errorText}>{error}</Text>}
 
-            <View style={styles.nameContainer}>
-              <TextInput
-                style={[styles.input, styles.nameInput]}
-                placeholder="First Name"
-                value={formData.firstName}
-                onChangeText={(value) => handleInputChange('firstName', value)}
-                autoCapitalize="words"
-                autoComplete="given-name"
-              />
-              <TextInput
-                style={[styles.input, styles.nameInput]}
-                placeholder="Last Name"
-                value={formData.lastName}
-                onChangeText={(value) => handleInputChange('lastName', value)}
-                autoCapitalize="words"
-                autoComplete="family-name"
-              />
-            </View>
+            {step === 1 && (
+              <>
+                <View style={styles.nameContainer}>
+                  <TextInput
+                    style={[styles.input, styles.nameInput]}
+                    placeholder="First Name"
+                    value={formData.firstName}
+                    onChangeText={(value) => handleInputChange('firstName', value)}
+                    autoCapitalize="words"
+                    autoComplete="given-name"
+                  />
+                  <TextInput
+                    style={[styles.input, styles.nameInput]}
+                    placeholder="Last Name"
+                    value={formData.lastName}
+                    onChangeText={(value) => handleInputChange('lastName', value)}
+                    autoCapitalize="words"
+                    autoComplete="family-name"
+                  />
+                </View>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Email"
+                  value={formData.email}
+                  onChangeText={(value) => handleInputChange('email', value)}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoComplete="email"
+                />
+                <TouchableOpacity 
+                  style={styles.signupButton}
+                  onPress={handleSendOtp}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.signupButtonText}>Send OTP</Text>
+                  )}
+                </TouchableOpacity>
+              </>
+            )}
 
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
-              value={formData.email}
-              onChangeText={(value) => handleInputChange('email', value)}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoComplete="email"
-            />
+            {step === 2 && (
+              <>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter OTP"
+                  value={formData.otp}
+                  onChangeText={(value) => handleInputChange('otp', value)}
+                  keyboardType="number-pad"
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity 
+                  style={styles.signupButton}
+                  onPress={handleVerifyOtp}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.signupButtonText}>Verify OTP</Text>
+                  )}
+                </TouchableOpacity>
+              </>
+            )}
 
-            <TextInput
-              style={styles.input}
-              placeholder="Password"
-              value={formData.password}
-              onChangeText={(value) => handleInputChange('password', value)}
-              secureTextEntry
-              autoComplete="password-new"
-            />
-
-            <TextInput
-              style={styles.input}
-              placeholder="Confirm Password"
-              value={formData.confirmPassword}
-              onChangeText={(value) => handleInputChange('confirmPassword', value)}
-              secureTextEntry
-              autoComplete="password-new"
-            />
-            
-            <TouchableOpacity 
-              style={styles.signupButton}
-              onPress={handleSignup}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.signupButtonText}>Create Account</Text>
-              )}
-            </TouchableOpacity>
+            {step === 3 && (
+              <>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Password"
+                  value={formData.password}
+                  onChangeText={(value) => handleInputChange('password', value)}
+                  secureTextEntry
+                  autoComplete="password-new"
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Confirm Password"
+                  value={formData.confirmPassword}
+                  onChangeText={(value) => handleInputChange('confirmPassword', value)}
+                  secureTextEntry
+                  autoComplete="password-new"
+                />
+                <TouchableOpacity 
+                  style={styles.signupButton}
+                  onPress={handleCompleteSignup}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.signupButtonText}>Complete Signup</Text>
+                  )}
+                </TouchableOpacity>
+              </>
+            )}
 
             <TouchableOpacity 
               style={styles.loginLink}

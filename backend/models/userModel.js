@@ -46,4 +46,7 @@ const userSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
+// Add geospatial index for location-based queries
+userSchema.index({ location: "2dsphere" });
+
 module.exports = mongoose.model("User", userSchema); 
