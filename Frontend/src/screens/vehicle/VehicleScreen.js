@@ -25,7 +25,7 @@ import {
 
 const { width } = Dimensions.get('window');
 const defaultImage = require('../../../assets/photo/toyota-innova.jpg');
-const backend_url="http://10.16.54.141:3000"||process.env.backend_url;
+const backend_url="http://192.168.137.1:3000"||process.env.backend_url;
 
 const VehicleCard = ({ vehicle, onPress }) => (
   <TouchableOpacity style={styles.vehicleCard} onPress={onPress}>
@@ -72,8 +72,8 @@ const VehicleScreen = ({ navigation }) => {
   const [locationLoading, setLocationLoading] = useState(false);
   const [distanceFilter, setDistanceFilter] = useState(null);
   const [sortByDistance, setSortByDistance] = useState(false);
-
   const filters = ['All', 'SUV', 'Sedan', 'Luxury'];
+
   const distanceFilters = [
     { label: 'All', value: null },
     { label: '5km', value: 5 },
@@ -137,9 +137,28 @@ const VehicleScreen = ({ navigation }) => {
   };
 
   const filteredVehicles = vehicles.filter(vehicle => {
-    const matchesSearch = vehicle.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         vehicle.location?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesFilter = selectedFilter === 'all' || vehicle.type?.toLowerCase() === selectedFilter.toLowerCase();
+    const title = vehicle.title?.toLowerCase() || '';
+    // Try address, then location.name, then fallback to empty string
+    const locationString = vehicle.address?.toLowerCase() ||
+                           vehicle.location?.name?.toLowerCase() ||
+                           '';
+    const matchesSearch = title.includes(searchQuery.toLowerCase()) ||
+                          locationString.includes(searchQuery.toLowerCase());
+    
+    // Filter logic for ALL, SUV, Sedan, Luxury
+    let matchesFilter = false;
+    if (selectedFilter === 'all') {
+      matchesFilter = true; // Show all vehicles
+    } else if (typeof vehicle.type === 'string') {
+      const vehicleType = vehicle.type.trim().toLowerCase();
+      if (selectedFilter === 'suv' && vehicleType === 'suv') {
+        matchesFilter = true;
+      } else if (selectedFilter === 'sedan' && vehicleType === 'sedan') {
+        matchesFilter = true;
+      } else if (selectedFilter === 'luxury' && vehicleType === 'luxury') {
+        matchesFilter = true;
+      }
+    }
     
     // Apply distance filter if set
     let matchesDistance = true;

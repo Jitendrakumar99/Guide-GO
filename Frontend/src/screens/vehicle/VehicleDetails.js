@@ -17,7 +17,7 @@ import ReviewRating from '../room/ReviewRating';
 import MapComponent from '../../components/MapComponent';
 
 const { width } = Dimensions.get('window');
-const backend_url="http://10.16.54.141:3000"||process.env.backend_url;
+const backend_url="http://192.168.137.1:3000"||process.env.backend_url;
 const defaultImage = require('../../../assets/photo/toyota-innova.jpg');
 const FeatureItem = ({ icon, text }) => (
   <View style={styles.featureItem}>
